@@ -10,9 +10,9 @@ type Seed = {
 };
 
 type DayStatus = {
-  logCount: number;   // 今週のログ数
+  logCount: number;
   weekNumber: number;
-  isDay7Ready: boolean; // 7日分揃っているか
+  isDay7Ready: boolean;
   alreadyAnalyzed: boolean;
 };
 
@@ -77,7 +77,7 @@ export default function NightGreenhouse() {
       });
       const data = await res.json();
       setAiResponse(data.text);
-      await fetchDayStatus(); // ログ数を再取得
+      await fetchDayStatus();
     } catch {
       setAiResponse("（案内人が静かに頷いています。通信が少し不安定なようです）");
     } finally {
