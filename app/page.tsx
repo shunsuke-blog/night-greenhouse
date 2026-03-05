@@ -52,7 +52,7 @@ export default function NightGreenhouse() {
     try {
       const res = await fetch("/api/status");
       if (res.ok) setDayStatus(await res.json());
-    } catch {}
+    } catch { }
   };
 
   const toggleRecording = () => {
@@ -153,11 +153,10 @@ export default function NightGreenhouse() {
           {Array.from({ length: 7 }, (_, i) => (
             <div
               key={i}
-              className={`w-3 h-3 rounded-full transition-all ${
-                i < dayStatus.logCount
+              className={`w-3 h-3 rounded-full transition-all ${i < dayStatus.logCount
                   ? "bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,0.6)]"
                   : "bg-slate-800"
-              }`}
+                }`}
             />
           ))}
           <span className="text-xs text-slate-600 ml-1">{dayStatus.logCount}/7日</span>
@@ -202,11 +201,10 @@ export default function NightGreenhouse() {
             <button
               key={n}
               onClick={() => setEmotionScore(n)}
-              className={`flex-1 aspect-square rounded-lg text-xs font-medium transition-all ${
-                emotionScore === n
+              className={`flex-1 aspect-square rounded-lg text-xs font-medium transition-all ${emotionScore === n
                   ? "bg-emerald-600 text-white shadow-[0_0_12px_rgba(52,211,153,0.4)]"
                   : "bg-slate-900/60 text-slate-500 border border-slate-800 hover:border-emerald-900"
-              }`}
+                }`}
             >
               {n}
             </button>
@@ -219,13 +217,12 @@ export default function NightGreenhouse() {
         <button
           onClick={toggleRecording}
           disabled={!canRecord && !isRecording}
-          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
-            isRecording
+          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording
               ? "bg-red-500/20 border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"
               : canRecord
-              ? "bg-emerald-600 shadow-lg shadow-emerald-900/20 hover:bg-emerald-500"
-              : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
-          }`}
+                ? "bg-emerald-600 shadow-lg shadow-emerald-900/20 hover:bg-emerald-500"
+                : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
+            }`}
         >
           <span className="text-xs">{isRecording ? "STOP" : "TALK"}</span>
         </button>

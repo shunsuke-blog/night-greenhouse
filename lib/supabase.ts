@@ -1,16 +1,24 @@
-// lib/supabase.ts
-// プロジェクトルートに lib/ フォルダを作成して、このファイルを置いてください
-
 import { createBrowserClient } from '@supabase/ssr'
 
-export const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// ビルド時ではなく実際に使用される瞬間に生成（SSR/プリレンダリング対策）
+let _client: ReturnType<typeof createBrowserClient> | null = null
 
-// ============================================================
-// 型定義（データベースの型を TypeScript で安全に扱う）
-// ============================================================
+function getClient() {
+  if (!_client) {
+    _client = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  }
+  return _client
+}
+
+// 既存の supabase.auth.xxx の書き方をそのまま使えるよう Proxy でラップ
+export const supabase = new Proxy({} as ReturnType<typeof createBrowserClient>, {
+  get(_, prop: string) {
+    return (getClient() as any)[prop]
+  }
+})
 
 export type DailyLog = {
   id: string
