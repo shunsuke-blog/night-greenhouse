@@ -150,7 +150,7 @@ export default function SettingsPage() {
     }`;
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center p-6 pt-10 space-y-6">
+    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center px-4 pt-8 pb-10 sm:px-6 sm:pt-10 space-y-6">
       <div className="w-full max-w-md flex items-center justify-between">
         <Link href="/" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
           ← 温室へ戻る

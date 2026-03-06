@@ -110,7 +110,7 @@ function LoginForm() {
       <div className="flex rounded-xl overflow-hidden border border-slate-800">
         <button
           type="button"
-          onClick={() => { setMode("signin"); setError(""); }}
+          onClick={() => { setMode("signin"); setError(""); setEmail(""); setPassword(""); setDisplayName(""); }}
           className={`flex-1 py-2 text-xs transition-colors ${
             mode === "signin"
               ? "bg-emerald-900/40 text-emerald-300"
@@ -121,7 +121,7 @@ function LoginForm() {
         </button>
         <button
           type="button"
-          onClick={() => { setMode("signup"); setError(""); }}
+          onClick={() => { setMode("signup"); setError(""); setEmail(""); setPassword(""); setDisplayName(""); }}
           className={`flex-1 py-2 text-xs transition-colors ${
             mode === "signup"
               ? "bg-emerald-900/40 text-emerald-300"
@@ -132,7 +132,7 @@ function LoginForm() {
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
         {mode === "signup" && (
           <div className="space-y-2">
             <label className="text-xs text-slate-400">呼ばれたい名前</label>
@@ -140,8 +140,9 @@ function LoginForm() {
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="しゅんすけ"
+              placeholder="例: たろう"
               required
+              autoComplete="off"
               className="w-full px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 text-sm"
             />
           </div>
@@ -155,6 +156,7 @@ function LoginForm() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="your@email.com"
             required
+            autoComplete={mode === "signup" ? "off" : "email"}
             className="w-full px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 text-sm"
           />
         </div>
@@ -168,6 +170,7 @@ function LoginForm() {
             placeholder="6文字以上"
             required
             minLength={6}
+            autoComplete={mode === "signup" ? "new-password" : "current-password"}
             className="w-full px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 text-sm"
           />
         </div>
@@ -193,7 +196,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-6">
+    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6">
       <Suspense>
         <LoginForm />
       </Suspense>

@@ -132,7 +132,7 @@ export default function NightGreenhouse() {
   // 分析完了後の表示
   if (analyzeResult) {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-6 space-y-6">
+      <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 space-y-6">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
         <p className="text-xs text-slate-500 tracking-widest">— 花が咲きました —</p>
 
@@ -166,12 +166,12 @@ export default function NightGreenhouse() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-6 space-y-8">
+    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 space-y-8">
       <div className="w-full max-w-md relative flex items-center justify-center">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
         <Link
           href="/settings"
-          className="absolute right-0 w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all text-xl leading-none"
+          className="absolute right-0 w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all text-3xl leading-none"
           aria-label="設定"
         >
           ⚙
@@ -232,7 +232,7 @@ export default function NightGreenhouse() {
             <button
               key={n}
               onClick={() => setEmotionScore(n)}
-              className={`flex-1 aspect-square rounded-lg text-xs font-medium transition-all ${emotionScore === n
+              className={`flex-1 h-11 rounded-lg text-xs font-medium transition-all ${emotionScore === n
                 ? "bg-emerald-600 text-white shadow-[0_0_12px_rgba(52,211,153,0.4)]"
                 : "bg-slate-900/60 text-slate-500 border border-slate-800 hover:border-emerald-900"
                 }`}
@@ -271,7 +271,7 @@ export default function NightGreenhouse() {
       {/* 強みの庭 ボタン（右下固定） */}
       <Link
         href="/seeds"
-        className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-3 bg-slate-900/80 border border-emerald-900/60 rounded-full text-emerald-400 text-sm tracking-wide backdrop-blur-sm hover:bg-emerald-900/30 hover:border-emerald-700 transition-all shadow-lg"
+        className="fixed bottom-8 right-4 sm:right-6 flex items-center gap-2 px-5 py-3 bg-slate-900/80 border border-emerald-900/60 rounded-full text-emerald-400 text-sm tracking-wide backdrop-blur-sm hover:bg-emerald-900/30 hover:border-emerald-700 transition-all shadow-lg"
       >
         強みの庭
         <span className="text-emerald-600">→</span>

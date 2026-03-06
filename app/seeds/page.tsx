@@ -128,7 +128,7 @@ export default function FlowersPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 p-6 max-w-lg mx-auto space-y-6">
+    <main className="min-h-screen bg-slate-950 text-slate-200 px-4 py-6 sm:px-6 max-w-lg mx-auto space-y-6">
       <div className="flex items-center justify-between pt-4">
         <div>
           <h1 className="text-xl font-light tracking-widest text-emerald-400">強みの庭</h1>
