@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 type AnalyzeResult = {
   flowers: { id: string; flower_name: string; level: number }[];
@@ -27,6 +29,7 @@ export default function NightGreenhouse() {
   const cycleInitialized = useRef(false);
   const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     fetchDayStatus();
@@ -61,7 +64,7 @@ export default function NightGreenhouse() {
           cycleInitialized.current = true;
         }
       }
-    } catch {}
+    } catch { }
   };
 
   const toggleRecording = () => {
@@ -119,6 +122,11 @@ export default function NightGreenhouse() {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
+
   const canRecord = emotionScore !== null;
 
   // 分析完了後の表示
@@ -159,10 +167,14 @@ export default function NightGreenhouse() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center p-6 space-y-8">
-      <div className="w-full max-w-md flex items-center justify-between">
+      <div className="w-full max-w-md relative flex items-center justify-center">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
-        <Link href="/seeds" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">
-          強みの庭 →
+        <Link
+          href="/settings"
+          className="absolute right-0 w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all text-xl leading-none"
+          aria-label="設定"
+        >
+          ⚙
         </Link>
       </div>
 
@@ -172,11 +184,10 @@ export default function NightGreenhouse() {
           {Array.from({ length: 7 }, (_, i) => (
             <div
               key={i}
-              className={`w-3 h-3 rounded-full transition-all ${
-                i < cycleLogCount
-                  ? "bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,0.6)]"
-                  : "bg-slate-800"
-              }`}
+              className={`w-3 h-3 rounded-full transition-all ${i < cycleLogCount
+                ? "bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,0.6)]"
+                : "bg-slate-800"
+                }`}
             />
           ))}
           <span className="text-xs text-slate-600 ml-1">{cycleLogCount}/7日</span>
@@ -221,11 +232,10 @@ export default function NightGreenhouse() {
             <button
               key={n}
               onClick={() => setEmotionScore(n)}
-              className={`flex-1 aspect-square rounded-lg text-xs font-medium transition-all ${
-                emotionScore === n
-                  ? "bg-emerald-600 text-white shadow-[0_0_12px_rgba(52,211,153,0.4)]"
-                  : "bg-slate-900/60 text-slate-500 border border-slate-800 hover:border-emerald-900"
-              }`}
+              className={`flex-1 aspect-square rounded-lg text-xs font-medium transition-all ${emotionScore === n
+                ? "bg-emerald-600 text-white shadow-[0_0_12px_rgba(52,211,153,0.4)]"
+                : "bg-slate-900/60 text-slate-500 border border-slate-800 hover:border-emerald-900"
+                }`}
             >
               {n}
             </button>
@@ -238,13 +248,12 @@ export default function NightGreenhouse() {
         <button
           onClick={toggleRecording}
           disabled={!canRecord && !isRecording}
-          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
-            isRecording
-              ? "bg-red-500/20 border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"
-              : canRecord
+          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording
+            ? "bg-red-500/20 border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"
+            : canRecord
               ? "bg-emerald-600 shadow-lg shadow-emerald-900/20 hover:bg-emerald-500"
               : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
-          }`}
+            }`}
         >
           <span className="text-xs">{isRecording ? "STOP" : "TALK"}</span>
         </button>
@@ -258,6 +267,16 @@ export default function NightGreenhouse() {
           あなたの声: {transcript}
         </p>
       )}
+
+      {/* 強みの庭 ボタン（右下固定） */}
+      <Link
+        href="/seeds"
+        className="fixed bottom-6 right-6 flex items-center gap-2 px-5 py-3 bg-slate-900/80 border border-emerald-900/60 rounded-full text-emerald-400 text-sm tracking-wide backdrop-blur-sm hover:bg-emerald-900/30 hover:border-emerald-700 transition-all shadow-lg"
+      >
+        強みの庭
+        <span className="text-emerald-600">→</span>
+      </Link>
+
     </main>
   );
 }

@@ -22,8 +22,18 @@ export async function GET(request: NextRequest) {
         },
       }
     );
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data.user) {
+      // 新規登録のメール確認後に user_profiles を作成（既存なら無視）
+      const displayName =
+        data.user.user_metadata?.display_name ??
+        data.user.email?.split("@")[0] ??
+        "ゲスト";
+      await supabase
+        .from("user_profiles")
+        .upsert({ id: data.user.id, display_name: displayName })
+        .select()
+        .maybeSingle();
       return NextResponse.redirect(new URL("/", origin));
     }
   }
