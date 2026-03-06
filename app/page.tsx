@@ -31,6 +31,7 @@ export default function NightGreenhouse() {
   const cycleInitialized = useRef(false);
   const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [displayName, setDisplayName] = useState("");
   const router = useRouter();
 
   // ─── 音量（土グロー用） ───
@@ -46,6 +47,32 @@ export default function NightGreenhouse() {
   useEffect(() => {
     return () => { stopVolumeTracking(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // プロフィール取得 + タイムゾーン自動保存
+    const loadProfile = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("display_name, timezone")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      setDisplayName(profile?.display_name ?? "");
+
+      // ブラウザのタイムゾーンが未保存 or 変わっていたら更新
+      if (!profile || profile.timezone !== browserTz) {
+        await supabase
+          .from("user_profiles")
+          .upsert({ id: user.id, timezone: browserTz });
+      }
+    };
+    loadProfile();
   }, []);
 
   useEffect(() => {
@@ -258,7 +285,7 @@ export default function NightGreenhouse() {
           <p className="text-emerald-500/50 animate-pulse text-sm">案内人があなたの言葉を噛み締めています...</p>
         ) : (
           <p className="text-slate-300 leading-relaxed italic text-sm">
-            {aiResponse || "「お帰りなさい。今日はどんな一日でしたか？」"}
+            {aiResponse || `「お帰りなさい${displayName ? `、${displayName}さん` : ""}。今日はどんな一日でしたか？」`}
           </p>
         )}
       </div>
@@ -329,14 +356,18 @@ export default function NightGreenhouse() {
         </p>
       )}
 
-      {/* 強みの庭 ボタン（右下固定・設定ボタンと右端を揃える） */}
-      <Link
-        href="/seeds"
-        className="fixed bottom-8 right-4 sm:right-6 flex items-center gap-2 px-5 py-3 bg-slate-900/80 border border-emerald-900/60 rounded-full text-emerald-400 text-sm tracking-wide backdrop-blur-sm hover:bg-emerald-900/30 hover:border-emerald-700 transition-all shadow-lg"
-      >
-        強みの庭
-        <span className="text-emerald-600">→</span>
-      </Link>
+      {/* 強みの庭 ボタン（設定ボタンと同じコンテナ幅・余白で右端を揃える） */}
+      <div className="fixed bottom-8 inset-x-0 flex justify-center px-4 sm:px-6 pointer-events-none">
+        <div className="w-full max-w-md relative h-0">
+          <Link
+            href="/seeds"
+            className="absolute right-0 pointer-events-auto flex items-center gap-2 px-5 py-3 bg-slate-900/80 border border-emerald-900/60 rounded-full text-emerald-400 text-sm tracking-wide backdrop-blur-sm hover:bg-emerald-900/30 hover:border-emerald-700 transition-all shadow-lg"
+          >
+            強みの庭
+            <span className="text-emerald-600">→</span>
+          </Link>
+        </div>
+      </div>
 
     </main>
   );

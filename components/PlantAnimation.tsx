@@ -52,14 +52,14 @@ function Soil() {
 // ─── 土台（音量グロー付き） ───
 // 感度調整: [0, 0.06] → 小さな音でも大きく光る
 function SoilGlow({ volume }: { volume: MotionValue<number> }) {
-  const opacity = useTransform(volume, [0, 0.5], [0, 0.88]);
+  const opacity = useTransform(volume, [0, 0.2], [0, 0.88]);
   return (
     <>
       {/* グロー層（土の後ろに描画） */}
       <motion.ellipse
-        cx="60" cy="148" rx="60" ry="20"
+        cx="60" cy="148" rx="72" ry="24"
         fill="#6ee7b7"
-        style={{ opacity, filter: "blur(15px)" }}
+        style={{ opacity, filter: "blur(30px)" }}
       />
       {/* 土（グロー層の上に重ねてクリーンに見せる） */}
       <ellipse cx="60" cy="145" rx="40" ry="11"

@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { GUIDE_SYSTEM_PROMPT } from "@/lib/prompts";
+import { calcWeekNumber } from "@/lib/date-utils";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
@@ -16,7 +17,10 @@ const MOCK_RESPONSES = [
   "7日間、ここに来てくれましたね。あなたの言葉はすべて、この温室の土になりました。…明日の朝、目覚めたとき、どんな気持ちでいたいですか？",
 ];
 
-async function getWeekNumber(supabase: Awaited<ReturnType<typeof createClient>>, userId: string): Promise<number> {
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
+
+/** タイムゾーン対応の週番号を取得 */
+async function getWeekNumber(supabase: SupabaseClient, userId: string, timezone: string): Promise<number> {
   const { data } = await supabase
     .from("daily_logs")
     .select("created_at")
@@ -26,18 +30,10 @@ async function getWeekNumber(supabase: Awaited<ReturnType<typeof createClient>>,
     .single();
 
   if (!data) return 1;
-
-  const diffDays = Math.floor(
-    (Date.now() - new Date(data.created_at).getTime()) / (1000 * 60 * 60 * 24)
-  );
-  return Math.floor(diffDays / 7) + 1;
+  return calcWeekNumber(new Date(data.created_at), timezone);
 }
 
-async function getLogCountForWeek(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  weekNumber: number
-): Promise<number> {
+async function getLogCountForWeek(supabase: SupabaseClient, userId: string, weekNumber: number): Promise<number> {
   const { count } = await supabase
     .from("daily_logs")
     .select("id", { count: "exact", head: true })
@@ -57,17 +53,30 @@ export async function POST(req: Request) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    // ユーザープロフィール（名前・タイムゾーン）を取得
+    let displayName: string | undefined;
+    let timezone = "Asia/Tokyo";
+    if (user) {
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("display_name, timezone")
+        .eq("id", user.id)
+        .maybeSingle();
+      displayName = profile?.display_name ?? undefined;
+      timezone = profile?.timezone ?? "Asia/Tokyo";
+    }
+
     // AI 返答を生成（DEV_MOCK_AI=true のときはモックを使用）
     let ai_response: string;
     if (process.env.DEV_MOCK_AI === "true") {
       const logCount = user
-        ? await getLogCountForWeek(supabase, user.id, await getWeekNumber(supabase, user.id))
+        ? await getLogCountForWeek(supabase, user.id, await getWeekNumber(supabase, user.id, timezone))
         : 0;
       ai_response = MOCK_RESPONSES[Math.min(logCount, MOCK_RESPONSES.length - 1)];
     } else {
       const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
-        systemInstruction: GUIDE_SYSTEM_PROMPT,
+        systemInstruction: GUIDE_SYSTEM_PROMPT(displayName),
       });
       const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: transcript }] }],
@@ -78,7 +87,7 @@ export async function POST(req: Request) {
     // 認証済みの場合は DB に保存
     let log_id: string | null = null;
     if (user) {
-      const week_number = await getWeekNumber(supabase, user.id);
+      const week_number = await getWeekNumber(supabase, user.id, timezone);
       const { data: log } = await supabase
         .from("daily_logs")
         .insert({

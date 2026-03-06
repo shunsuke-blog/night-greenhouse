@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
-      systemInstruction: GUIDE_SYSTEM_PROMPT,
+      systemInstruction: GUIDE_SYSTEM_PROMPT(),
     });
 
     const result = await model.generateContent({

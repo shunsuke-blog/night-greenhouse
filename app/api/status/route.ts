@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { calcWeekNumber } from "@/lib/date-utils";
 
 export async function GET() {
   try {
@@ -9,7 +10,15 @@ export async function GET() {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
-    // 最初のログから week_number を計算
+    // ユーザーのタイムゾーンを取得
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("timezone")
+      .eq("id", user.id)
+      .maybeSingle();
+    const timezone = profile?.timezone ?? "Asia/Tokyo";
+
+    // 最初のログから週番号を計算（タイムゾーン対応）
     const { data: firstLog } = await supabase
       .from("daily_logs")
       .select("created_at")
@@ -19,7 +28,7 @@ export async function GET() {
       .single();
 
     const weekNumber = firstLog
-      ? Math.floor((Date.now() - new Date(firstLog.created_at).getTime()) / (1000 * 60 * 60 * 24 * 7)) + 1
+      ? calcWeekNumber(new Date(firstLog.created_at), timezone)
       : 1;
 
     // 今週のログを取得（is_analyzed フラグ込み）
