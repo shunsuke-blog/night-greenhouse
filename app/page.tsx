@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 type AnalyzeResult = {
@@ -9,6 +9,7 @@ type AnalyzeResult = {
 
 type DayStatus = {
   logCount: number;
+  unanalyzedCount: number;
   weekNumber: number;
   isDay7Ready: boolean;
   alreadyAnalyzed: boolean;
@@ -22,6 +23,8 @@ export default function NightGreenhouse() {
   const [recognition, setRecognition] = useState<any>(null);
   const [emotionScore, setEmotionScore] = useState<number | null>(null);
   const [dayStatus, setDayStatus] = useState<DayStatus | null>(null);
+  const [cycleLogCount, setCycleLogCount] = useState(0);
+  const cycleInitialized = useRef(false);
   const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -49,7 +52,15 @@ export default function NightGreenhouse() {
   const fetchDayStatus = async () => {
     try {
       const res = await fetch("/api/status");
-      if (res.ok) setDayStatus(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setDayStatus(data);
+        // 初回のみDBから未分析ログ数でカウントを初期化
+        if (!cycleInitialized.current) {
+          setCycleLogCount(data.alreadyAnalyzed ? 0 : (data.unanalyzedCount ?? 0));
+          cycleInitialized.current = true;
+        }
+      }
     } catch {}
   };
 
@@ -75,6 +86,7 @@ export default function NightGreenhouse() {
       });
       const data = await res.json();
       setAiResponse(data.text);
+      setCycleLogCount(prev => prev + 1);
       await fetchDayStatus();
     } catch {
       setAiResponse("（案内人が静かに頷いています。通信が少し不安定なようです）");
@@ -95,6 +107,7 @@ export default function NightGreenhouse() {
       const data = await res.json();
       if (res.ok) {
         setAnalyzeResult(data);
+        setCycleLogCount(0);
         await fetchDayStatus();
       } else {
         setAiResponse(data.error ?? "分析に失敗しました");
@@ -160,18 +173,18 @@ export default function NightGreenhouse() {
             <div
               key={i}
               className={`w-3 h-3 rounded-full transition-all ${
-                i < dayStatus.logCount
+                i < cycleLogCount
                   ? "bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,0.6)]"
                   : "bg-slate-800"
               }`}
             />
           ))}
-          <span className="text-xs text-slate-600 ml-1">{dayStatus.logCount}/7日</span>
+          <span className="text-xs text-slate-600 ml-1">{cycleLogCount}/7日</span>
         </div>
       )}
 
       {/* Day7 分析ボタン */}
-      {dayStatus?.isDay7Ready && !dayStatus.alreadyAnalyzed && (
+      {cycleLogCount >= 7 && !dayStatus?.alreadyAnalyzed && (
         <div className="max-w-md w-full">
           <button
             onClick={runAnalyze}

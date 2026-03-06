@@ -22,26 +22,23 @@ export async function GET() {
       ? Math.floor((Date.now() - new Date(firstLog.created_at).getTime()) / (1000 * 60 * 60 * 24 * 7)) + 1
       : 1;
 
-    // 今週のログ数
-    const { count } = await supabase
+    // 今週のログを取得（is_analyzed フラグ込み）
+    const { data: weekLogs } = await supabase
       .from("daily_logs")
-      .select("id", { count: "exact", head: true })
+      .select("id, is_analyzed")
       .eq("user_id", user.id)
       .eq("week_number", weekNumber);
 
-    // 今週すでに分析済みか
-    const { data: analyzed } = await supabase
-      .from("seeds_collection")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("week_number", weekNumber)
-      .single();
+    const totalCount = weekLogs?.length ?? 0;
+    const unanalyzedCount = weekLogs?.filter(l => !l.is_analyzed).length ?? 0;
+    const alreadyAnalyzed = totalCount >= 7 && (weekLogs?.every(l => l.is_analyzed) ?? false);
 
     return NextResponse.json({
       weekNumber,
-      logCount: count ?? 0,
-      isDay7Ready: (count ?? 0) >= 7,
-      alreadyAnalyzed: !!analyzed,
+      logCount: totalCount,
+      unanalyzedCount,
+      isDay7Ready: totalCount >= 7 && !alreadyAnalyzed,
+      alreadyAnalyzed,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
