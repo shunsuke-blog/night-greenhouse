@@ -1,7 +1,30 @@
 /**
- * 指定タイムゾーンでの暦日文字列を返す (YYYY-MM-DD)
- * ※ JST(UTC+9)の場合、UTC 15:00 以降は翌日として扱う
+ * ある月のUTC取得範囲を返す（タイムゾーン最大オフセット±14hバッファ付き）
+ * 取得後は localDateStr で暦日変換・フィルタすること
  */
+export function getMonthUTCRange(year: number, month: number): { gte: string; lt: string } {
+  const buffer = 14 * 3600_000; // 14h = 世界最大オフセット
+  const firstDay = new Date(Date.UTC(year, month - 1, 1));
+  const nextMonth = new Date(Date.UTC(year, month, 1));
+  return {
+    gte: new Date(firstDay.getTime() - buffer).toISOString(),
+    lt:  new Date(nextMonth.getTime() + buffer).toISOString(),
+  };
+}
+
+/**
+ * ある日のUTC取得範囲を返す（タイムゾーン最大オフセット±14hバッファ付き）
+ * 取得後は localDateStr で暦日変換・フィルタすること
+ */
+export function getDayUTCRange(dateStr: string): { gte: string; lt: string } {
+  const buffer = 14 * 3600_000;
+  const dayStart = new Date(dateStr + "T00:00:00Z");
+  return {
+    gte: new Date(dayStart.getTime() - buffer).toISOString(),
+    lt:  new Date(dayStart.getTime() + 24 * 3600_000 + buffer).toISOString(),
+  };
+}
+
 export function localDateStr(date: Date, timezone: string): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: timezone,

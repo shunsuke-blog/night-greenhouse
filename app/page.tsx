@@ -251,9 +251,23 @@ export default function NightGreenhouse() {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 gap-5">
 
-      {/* タイトル + 設定ボタン */}
+      {/* タイトル + 左:カレンダー / 右:設定 */}
       <div className="w-full max-w-md relative flex items-center justify-center">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
+        {/* カレンダーボタン（左） */}
+        <Link
+          href="/calendar"
+          className="absolute left-0 w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all"
+          aria-label="記録の庭"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="3" y1="9" x2="21" y2="9" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+          </svg>
+        </Link>
+        {/* 設定ボタン（右） */}
         <Link
           href="/settings"
           className="absolute right-0 w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-slate-900/60 border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all text-3xl leading-none"
