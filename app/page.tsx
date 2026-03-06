@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { PlantAnimation, getPlantStage } from "@/components/PlantAnimation";
+import { getQuestion, getResponse } from "@/lib/messages";
 import { useMotionValue, useSpring } from "framer-motion";
 
 type AnalyzeResult = {
@@ -22,7 +23,9 @@ type DayStatus = {
 export default function NightGreenhouse() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [aiResponse, setAiResponse] = useState("");
+  // responseIndex: 記録直前の cycleLogCount。null = 問いかけ表示
+  const [responseIndex, setResponseIndex] = useState<number | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
   const [emotionScore, setEmotionScore] = useState<number | null>(null);
@@ -150,7 +153,8 @@ export default function NightGreenhouse() {
       if (transcript.trim()) sendToLogs(transcript);
     } else {
       setTranscript("");
-      setAiResponse("");
+      setResponseIndex(null);
+      setErrorMsg("");
       recognition?.start();
       startVolumeTracking();
     }
@@ -159,18 +163,18 @@ export default function NightGreenhouse() {
 
   const sendToLogs = async (text: string) => {
     setIsLoading(true);
+    const indexAtSend = cycleLogCount; // 送信時点のカウントを返しのインデックスに使う
     try {
-      const res = await fetch("/api/logs", {
+      await fetch("/api/logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transcript: text, emotion_score: emotionScore }),
       });
-      const data = await res.json();
-      setAiResponse(data.text);
+      setResponseIndex(indexAtSend);
       setCycleLogCount(prev => prev + 1);
       await fetchDayStatus();
     } catch {
-      setAiResponse("（案内人が静かに頷いています。通信が少し不安定なようです）");
+      setErrorMsg("（通信が少し不安定なようです。もう一度お試しください）");
     } finally {
       setIsLoading(false);
     }
@@ -191,10 +195,10 @@ export default function NightGreenhouse() {
         setCycleLogCount(0);
         await fetchDayStatus();
       } else {
-        setAiResponse(data.error ?? "分析に失敗しました");
+        setErrorMsg(data.error ?? "分析に失敗しました");
       }
     } catch {
-      setAiResponse("分析中にエラーが発生しました");
+      setErrorMsg("分析中にエラーが発生しました");
     } finally {
       setIsAnalyzing(false);
     }
@@ -293,14 +297,16 @@ export default function NightGreenhouse() {
         </div>
       )}
 
-      {/* AI メッセージ */}
+      {/* 案内人のメッセージ */}
       <div className="max-w-md w-full min-h-[72px] p-4 bg-slate-900/40 rounded-2xl border border-emerald-900/30 backdrop-blur-sm">
         {isLoading ? (
-          <p className="text-emerald-500/50 animate-pulse text-sm">案内人があなたの言葉を噛み締めています...</p>
+          <p className="text-emerald-500/50 animate-pulse text-sm">言葉を受け取っています...</p>
+        ) : errorMsg ? (
+          <p className="text-slate-500 leading-relaxed italic text-sm">{errorMsg}</p>
+        ) : responseIndex !== null ? (
+          <p className="text-slate-300 leading-relaxed italic text-sm">{getResponse(responseIndex)}</p>
         ) : (
-          <p className="text-slate-300 leading-relaxed italic text-sm">
-            {aiResponse || `「お帰りなさい${displayName ? `、${displayName}さん` : ""}。今日はどんな一日でしたか？」`}
-          </p>
+          <p className="text-slate-300 leading-relaxed italic text-sm">{getQuestion(cycleLogCount, displayName)}</p>
         )}
       </div>
 
