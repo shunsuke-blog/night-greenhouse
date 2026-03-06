@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { PlantAnimation, getPlantStage } from "@/components/PlantAnimation";
 
 type AnalyzeResult = {
   flowers: { id: string; flower_name: string; level: number }[];
@@ -128,16 +129,21 @@ export default function NightGreenhouse() {
   };
 
   const canRecord = emotionScore !== null;
+  const plantStage = analyzeResult ? "flower" : getPlantStage(cycleLogCount);
 
   // 分析完了後の表示
   if (analyzeResult) {
     return (
-      <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 space-y-6">
+      <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 gap-5">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
+
+        {/* 花が咲いた植物 */}
+        <PlantAnimation stage="flower" />
+
         <p className="text-xs text-slate-500 tracking-widest">— 花が咲きました —</p>
 
         <div className="max-w-md w-full space-y-4">
-          <div className="text-center py-4">
+          <div className="text-center">
             <p className="text-slate-400 text-sm">
               今週の言葉から <span className="text-emerald-300 text-lg">{analyzeResult.fragment_count}</span> 個の強みの断片が見つかりました
             </p>
@@ -166,7 +172,9 @@ export default function NightGreenhouse() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 space-y-8">
+    <main className="min-h-screen bg-slate-950 text-slate-200 flex flex-col items-center justify-center px-4 py-8 sm:px-6 gap-5">
+
+      {/* タイトル + 設定ボタン */}
       <div className="w-full max-w-md relative flex items-center justify-center">
         <h1 className="text-2xl font-light tracking-widest text-emerald-400">夜の温室</h1>
         <Link
@@ -178,7 +186,7 @@ export default function NightGreenhouse() {
         </Link>
       </div>
 
-      {/* 今週の進捗 */}
+      {/* ログカウント（進捗ランプ） */}
       {dayStatus && (
         <div className="flex gap-2 items-center">
           {Array.from({ length: 7 }, (_, i) => (
@@ -193,6 +201,20 @@ export default function NightGreenhouse() {
           <span className="text-xs text-slate-600 ml-1">{cycleLogCount}/7日</span>
         </div>
       )}
+
+      {/* AI メッセージ */}
+      <div className="max-w-md w-full min-h-[72px] p-4 bg-slate-900/40 rounded-2xl border border-emerald-900/30 backdrop-blur-sm">
+        {isLoading ? (
+          <p className="text-emerald-500/50 animate-pulse text-sm">案内人があなたの言葉を噛み締めています...</p>
+        ) : (
+          <p className="text-slate-300 leading-relaxed italic text-sm">
+            {aiResponse || "「お帰りなさい。今日はどんな一日でしたか？」"}
+          </p>
+        )}
+      </div>
+
+      {/* 植物 */}
+      <PlantAnimation stage={plantStage} />
 
       {/* Day7 分析ボタン */}
       {cycleLogCount >= 7 && !dayStatus?.alreadyAnalyzed && (
@@ -210,22 +232,11 @@ export default function NightGreenhouse() {
         </div>
       )}
 
-      {/* AI の返答エリア */}
-      <div className="max-w-md w-full min-h-[150px] p-6 bg-slate-900/40 rounded-2xl border border-emerald-900/30 backdrop-blur-sm">
-        {isLoading ? (
-          <p className="text-emerald-500/50 animate-pulse">案内人があなたの言葉を噛み締めています...</p>
-        ) : (
-          <p className="text-slate-300 leading-relaxed italic">
-            {aiResponse || "「お帰りなさい。今日はどんな一日でしたか？」"}
-          </p>
-        )}
-      </div>
-
       {/* 感情スコア選択 */}
-      <div className="max-w-md w-full space-y-3">
+      <div className="max-w-md w-full space-y-2">
         <p className="text-xs text-slate-500 text-center">
           今の気持ちを数字で教えてください
-          <span className="ml-2 text-slate-600">（1: とても辛い　10: とても良い）</span>
+          <span className="ml-2 text-slate-600">（1: 辛い　10: 良い）</span>
         </p>
         <div className="flex justify-between gap-1">
           {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
@@ -243,8 +254,8 @@ export default function NightGreenhouse() {
         </div>
       </div>
 
-      {/* 録音ボタン */}
-      <div className="flex flex-col items-center gap-3">
+      {/* TALK ボタン */}
+      <div className="flex flex-col items-center gap-2">
         <button
           onClick={toggleRecording}
           disabled={!canRecord && !isRecording}
@@ -268,7 +279,7 @@ export default function NightGreenhouse() {
         </p>
       )}
 
-      {/* 強みの庭 ボタン（右下固定） */}
+      {/* 強みの庭 ボタン（右下固定・設定ボタンと右端を揃える） */}
       <Link
         href="/seeds"
         className="fixed bottom-8 right-4 sm:right-6 flex items-center gap-2 px-5 py-3 bg-slate-900/80 border border-emerald-900/60 rounded-full text-emerald-400 text-sm tracking-wide backdrop-blur-sm hover:bg-emerald-900/30 hover:border-emerald-700 transition-all shadow-lg"
