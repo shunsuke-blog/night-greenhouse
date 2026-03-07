@@ -143,7 +143,7 @@ function LoginForm() {
               placeholder="例: たろう"
               required
               autoComplete="off"
-              className="w-full px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 text-sm"
+              className="w-full px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 text-base"
             />
           </div>
         )}
@@ -157,7 +157,7 @@ function LoginForm() {
             placeholder="your@email.com"
             required
             autoComplete={mode === "signup" ? "off" : "email"}
-            className="w-full px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 text-sm"
+            className="w-full px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 text-base"
           />
         </div>
 
@@ -171,7 +171,7 @@ function LoginForm() {
             required
             minLength={6}
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            className="w-full px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 text-sm"
+            className="w-full px-4 py-3 bg-slate-900/60 border border-slate-800 rounded-xl text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-800 text-base"
           />
         </div>
 

@@ -32,6 +32,13 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
       "「はなす」を押すと音声の記録が始まります。話し終えたら「やめる」を押すと自動的に保存されます。",
   },
   {
+    id: "calendar-button",
+    target: "calendar-button",
+    title: "過去のログを振り返る",
+    description:
+      "カレンダーから過去の記録をいつでも読み返せます。あなたの言葉の積み重ねがここに残ります。",
+  },
+  {
     id: "treasures-button",
     target: "treasures-button",
     title: "価値観の倉庫を見る",
@@ -44,13 +51,6 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     title: "咲いた花（強み）を見る",
     description:
       "7回の記録から分析された「あなたの強み」が花として現れます。このボタンから強みの庭へ移動できます。",
-  },
-  {
-    id: "calendar-button",
-    target: "calendar-button",
-    title: "過去のログを振り返る",
-    description:
-      "カレンダーから過去の記録をいつでも読み返せます。あなたの言葉の積み重ねがここに残ります。",
   },
 ];
 
