@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { calcWeekNumber } from "@/lib/date-utils";
+import { calcWeekNumber, getDayUTCRange, localDateStr } from "@/lib/date-utils";
 
 export async function GET() {
   try {
@@ -42,12 +42,28 @@ export async function GET() {
     const unanalyzedCount = weekLogs?.filter(l => !l.is_analyzed).length ?? 0;
     const alreadyAnalyzed = totalCount >= 7 && (weekLogs?.every(l => l.is_analyzed) ?? false);
 
+    // 今日のログIDを取得（1日1回制限 + やり直し用）
+    const today = localDateStr(new Date(), timezone);
+    const { gte, lt } = getDayUTCRange(today);
+    const { data: todayLogs } = await supabase
+      .from("daily_logs")
+      .select("id, created_at")
+      .eq("user_id", user.id)
+      .gte("created_at", gte)
+      .lt("created_at", lt)
+      .order("created_at", { ascending: false });
+
+    const todayLog = todayLogs?.find(
+      l => localDateStr(new Date(l.created_at), timezone) === today
+    );
+
     return NextResponse.json({
       weekNumber,
       logCount: totalCount,
       unanalyzedCount,
       isDay7Ready: totalCount >= 7 && !alreadyAnalyzed,
       alreadyAnalyzed,
+      today_log_id: todayLog?.id ?? null,
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

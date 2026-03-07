@@ -387,7 +387,7 @@ export default function SettingsPage() {
                   type="text"
                   value={subject}
                   onChange={e => setSubject(e.target.value)}
-                  placeholder="例: 音声が再生されない問題"
+                  placeholder="例: 録音ができない問題"
                   required
                   className={inputClass}
                 />

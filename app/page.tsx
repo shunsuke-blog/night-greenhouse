@@ -21,6 +21,7 @@ type DayStatus = {
   weekNumber: number;
   isDay7Ready: boolean;
   alreadyAnalyzed: boolean;
+  today_log_id: string | null;
 };
 
 export default function NightGreenhouse() {
@@ -42,6 +43,8 @@ export default function NightGreenhouse() {
   const [initialized, setInitialized] = useState(false);
   const initDoneRef = useRef(0); // 完了した初期化の数（2になったら描画開始）
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [todayLogId, setTodayLogId] = useState<string | null>(null);
+  const [isRedo, setIsRedo] = useState(false);
   const router = useRouter();
 
   // ─── 音量（土グロー用） ───
@@ -126,6 +129,8 @@ export default function NightGreenhouse() {
       if (res.ok) {
         const data = await res.json();
         setDayStatus(data);
+        // 今日のログIDを同期（やり直し制御用）
+        if (data.today_log_id) setTodayLogId(data.today_log_id);
         // 初回のみDBから未分析ログ数でカウントを初期化
         if (!cycleInitialized.current) {
           setCycleLogCount(data.alreadyAnalyzed ? 0 : (data.unanalyzedCount ?? 0));
@@ -188,13 +193,26 @@ export default function NightGreenhouse() {
     setIsLoading(true);
     const indexAtSend = cycleLogCount; // 送信時点のカウントを返しのインデックスに使う
     try {
-      await fetch("/api/logs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript: text, emotion_score: emotionScore }),
-      });
+      if (isRedo && todayLogId) {
+        // やり直し: 既存ログを更新
+        await fetch("/api/logs", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ log_id: todayLogId, transcript: text, emotion_score: emotionScore }),
+        });
+      } else {
+        // 初回: 新規ログを作成
+        const res = await fetch("/api/logs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ transcript: text, emotion_score: emotionScore }),
+        });
+        const data = await res.json();
+        if (data.log_id) setTodayLogId(data.log_id);
+        setCycleLogCount(prev => prev + 1);
+      }
       setResponseIndex(indexAtSend);
-      setCycleLogCount(prev => prev + 1);
+      setIsRedo(false);
       await fetchDayStatus();
     } catch {
       setErrorMsg("（通信が少し不安定なようです。もう一度お試しください）");
@@ -424,22 +442,34 @@ export default function NightGreenhouse() {
         </div>
       </div>
 
-      {/* TALK ボタン */}
+      {/* TALK ボタン / やり直すボタン */}
       <div className="flex flex-col items-center gap-2">
-        <button
-          data-onboarding="talk-button"
-          onClick={toggleRecording}
-          disabled={!canRecord && !isRecording}
-          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording
-            ? "bg-red-500/20 border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"
-            : canRecord
-              ? "bg-emerald-600 shadow-lg shadow-emerald-900/20 hover:bg-emerald-500"
-              : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
-            }`}
-        >
-          <span className="text-xs">{isRecording ? "やめる" : "はなす"}</span>
-        </button>
-        <p className={`text-xs text-slate-600 ${!canRecord && !isRecording ? "" : "invisible"}`}>スコアを選んでから話せます</p>
+        {todayLogId && !isRedo && !isRecording ? (
+          // 今日すでに録音済み → やり直すボタン
+          <button
+            data-onboarding="talk-button"
+            onClick={() => setIsRedo(true)}
+            className="w-20 h-20 rounded-full flex items-center justify-center transition-all bg-slate-800/60 border border-slate-600 hover:border-emerald-700 hover:bg-slate-800"
+          >
+            <span className="text-xs text-slate-400">やり直す</span>
+          </button>
+        ) : (
+          // 通常の録音ボタン
+          <button
+            data-onboarding="talk-button"
+            onClick={toggleRecording}
+            disabled={!canRecord && !isRecording}
+            className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${isRecording
+              ? "bg-red-500/20 border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]"
+              : canRecord
+                ? "bg-emerald-600 shadow-lg shadow-emerald-900/20 hover:bg-emerald-500"
+                : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
+              }`}
+          >
+            <span className="text-xs">{isRecording ? "やめる" : "はなす"}</span>
+          </button>
+        )}
+        <p className={`text-xs text-slate-600 ${!canRecord && !isRecording && (!todayLogId || isRedo) ? "" : "invisible"}`}>スコアを選んでから話せます</p>
       </div>
 
       {transcript && (

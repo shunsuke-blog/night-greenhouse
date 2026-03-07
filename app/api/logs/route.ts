@@ -58,3 +58,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const { log_id, transcript, emotion_score } = await req.json();
+    if (!log_id || !transcript?.trim()) {
+      return NextResponse.json({ error: "log_id と transcript が必要です" }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    const { error } = await supabase
+      .from("daily_logs")
+      .update({ transcript, emotion_score: emotion_score ?? null })
+      .eq("id", log_id)
+      .eq("user_id", user.id);
+
+    if (error) throw error;
+    return NextResponse.json({ log_id });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
