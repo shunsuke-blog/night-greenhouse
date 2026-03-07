@@ -193,6 +193,16 @@ export default function NightGreenhouse() {
     setIsRecording(!isRecording);
   };
 
+  const startRedoRecording = () => {
+    setIsRedo(true);
+    setTranscript("");
+    setResponseIndex(null);
+    setErrorMsg("");
+    recognition?.start();
+    startVolumeTracking();
+    setIsRecording(true);
+  };
+
   const sendToLogs = async (text: string) => {
     setIsLoading(true);
     const indexAtSend = cycleLogCount; // 送信時点のカウントを返しのインデックスに使う
@@ -449,13 +459,18 @@ export default function NightGreenhouse() {
       {/* TALK ボタン / やり直すボタン */}
       <div className="flex flex-col items-center gap-2">
         {todayLogId && !isRedo && !isRecording ? (
-          // 今日すでに録音済み → やり直すボタン
+          // 今日すでに録音済み → やり直すボタン（はなすと同じスタイル）
           <button
             data-onboarding="talk-button"
-            onClick={() => setIsRedo(true)}
-            className="w-20 h-20 rounded-full flex items-center justify-center transition-all bg-slate-800/60 border border-slate-600 hover:border-emerald-700 hover:bg-slate-800"
+            onClick={startRedoRecording}
+            disabled={!canRecord}
+            className={`w-20 h-20 rounded-full flex items-center justify-center transition-all ${
+              canRecord
+                ? "bg-emerald-600 shadow-lg shadow-emerald-900/20 hover:bg-emerald-500"
+                : "bg-slate-800 border border-slate-700 opacity-40 cursor-not-allowed"
+            }`}
           >
-            <span className="text-xs text-slate-400">やり直す</span>
+            <span className="text-xs">やり直す</span>
           </button>
         ) : (
           // 通常の録音ボタン
