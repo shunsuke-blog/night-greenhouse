@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { calcWeekNumber, getDayUTCRange, localDateStr } from "@/lib/date-utils";
+import { calcWeekNumber, getDayUTCRange, localDateStr, appDateStr } from "@/lib/date-utils";
 
 export async function GET() {
   try {
@@ -43,7 +43,8 @@ export async function GET() {
     const alreadyAnalyzed = totalCount >= 7 && (weekLogs?.every(l => l.is_analyzed) ?? false);
 
     // 今日のログIDを取得（1日1回制限 + やり直し用）
-    const today = localDateStr(new Date(), timezone);
+    // 日付の切り替わりは午前5時（appDateStr で5時間オフセット）
+    const today = appDateStr(new Date(), timezone);
     const { gte, lt } = getDayUTCRange(today);
     const { data: todayLogs } = await supabase
       .from("daily_logs")
@@ -54,7 +55,7 @@ export async function GET() {
       .order("created_at", { ascending: false });
 
     const todayLog = todayLogs?.find(
-      l => localDateStr(new Date(l.created_at), timezone) === today
+      l => appDateStr(new Date(l.created_at), timezone) === today
     );
 
     return NextResponse.json({

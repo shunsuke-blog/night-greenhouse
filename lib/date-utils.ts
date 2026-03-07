@@ -35,6 +35,16 @@ export function localDateStr(date: Date, timezone: string): string {
 }
 
 /**
+ * 1日の切り替わりを午前5時とする「アプリ内日付」を返す
+ * 例: 午前4:30 → 前日扱い、午前5:00 → 当日扱い
+ */
+const DAY_START_HOUR = 5;
+export function appDateStr(date: Date, timezone: string): string {
+  const shifted = new Date(date.getTime() - DAY_START_HOUR * 3600_000);
+  return localDateStr(shifted, timezone);
+}
+
+/**
  * firstLogDate から現在まで何週目かを計算（タイムゾーン対応）
  * ユーザーの暦日ベースで比較するため、JST深夜もズレなし
  */
