@@ -1,8 +1,8 @@
 # 夜の温室 (Night Greenhouse) — 技術仕様書
 
-**バージョン:** v3.0
-**最終更新:** 2026年3月7日
-**ステータス:** Phase 0〜4 完了・本番稼働中
+**バージョン:** v4.0
+**最終更新:** 2026年3月8日
+**ステータス:** Phase 0〜5 完了・本番稼働中
 
 ---
 
@@ -65,7 +65,7 @@ Next.js Route Handlers (API層)
 | Animation   | `Framer Motion`           | 植物ステージ間トランジション・音量連動グロー |
 | デプロイ    | `Vercel`                  | GitHub連携・自動デプロイ                    |
 
-> **Web Speech API の制約:** Chrome 最新版のみ対応。Safari/Firefox はテキスト入力にフォールバック。
+> **Web Speech API の制約:** Chrome 最新版のみ対応。Safari/Firefox はテキスト入力（「かく」ボタン）にフォールバック。
 
 ---
 
@@ -73,18 +73,21 @@ Next.js Route Handlers (API層)
 
 ### 3.1 ログ記録フロー（Day 1〜6）✅
 
-| 機能             | 説明                                                                          | 状態 |
-| ---------------- | ----------------------------------------------------------------------------- | ---- |
-| 感情チェックイン | 1〜10点のスコアを選択（44px タッチターゲット確保）                            | 完了 |
-| 音声入力         | TALK/STOP ボタンで録音。録音中は土部分が音量に連動して発光                    | 完了 |
-| 案内人の応答     | 属性ラベルを剥がし、事象・感情にフォーカス。全肯定トーンで1つだけ問いを投げる | 完了 |
-| 名前呼びかけ     | display_name をプロフィールから取得し、挨拶文と AI プロンプトに反映           | 完了 |
-| 永続化           | 発言・スコア・AI返答をDBへ保存。week_number はタイムゾーン対応で算出          | 完了 |
-| 進捗ランプ       | 7つのランプで今サイクルの記録数を表示。分析後リセット                         | 完了 |
+| 機能                 | 説明                                                                          | 状態 |
+| -------------------- | ----------------------------------------------------------------------------- | ---- |
+| 感情チェックイン     | 1〜10点のスコアを選択（44px タッチターゲット確保）                            | 完了 |
+| 音声入力             | マイクボタン（SVGアイコン）で録音開始。録音中は停止アイコンに切り替わり、土部分が音量に連動して発光 | 完了 |
+| テキスト入力         | 「かく」ボタン（鉛筆+ノートSVGアイコン）でモーダル入力。電車内など声が出せない場面でも記録可能 | 完了 |
+| 複数ログ対応         | 同日2回目以降のログ記録時は選択ポップアップを表示（追加 / 更新 / キャンセル）。ログ数カウント表示あり | 完了 |
+| ポップアップタイミング | ボタン押下時（録音・入力の前）に前回ログ内容とともにポップアップを表示         | 完了 |
+| 案内人の応答         | 属性ラベルを剥がし、事象・感情にフォーカス。全肯定トーンで1つだけ問いを投げる | 完了 |
+| 名前呼びかけ         | display_name をプロフィールから取得し、挨拶文と AI プロンプトに反映           | 完了 |
+| 永続化               | 発言・スコア・AI返答をDBへ保存。week_number はタイムゾーン対応で算出          | 完了 |
+| 進捗ランプ           | 7つのランプで今サイクルの記録数を表示。分析後リセット                         | 完了 |
 
 ### 3.2 花が咲くフェーズ（Day 7）✅
 
-> **蓄積の原則:** 7日間のログをGeminiへ投入し「強みの断片」(動詞)を抽出。分析は1サイクルに1回。結果は花として蓄積され、サイクルを重ねるごとにレベルが上がる。
+> **蓄積の原則:** 7日間のログをGeminiへ投入し「強みの断片」(動詞)を抽出。分析は24時間に1回。結果は花として蓄積され、サイクルを重ねるごとにレベルが上がる。
 
 **アウトプット構成：**
 
@@ -102,7 +105,7 @@ Next.js Route Handlers (API層)
 
 ### 3.4 宝物を見つけるフェーズ（Day 7）✅
 
-> **蓄積の原則:** 7日間のログをGeminiへ投入し「宝の断片」(名詞)を抽出。分析は1サイクルに1回。結果は宝物として蓄積され、サイクルを重ねるごとにレベルが上がる。
+> **蓄積の原則:** 7日間のログをGeminiへ投入し「宝の断片」(名詞)を抽出。分析は24時間に1回。結果は宝物として蓄積され、サイクルを重ねるごとにレベルが上がる。
 
 **アウトプット構成：**
 
@@ -117,19 +120,25 @@ Next.js Route Handlers (API層)
 - 複数ログで同じ性質が見られれば統合し、各ログ固有の発掘場所文を生成
 - 無理に件数を増やさない（明確に見えた価値観だけ出力）
 
-### 3.5 強みの庭✅
+### 3.5 強みの庭 ✅
 
 - **花カード一覧:** 蓄積された花をレベル順に表示
 - **カード展開:** クリックで OS・逆照射・土壌・根っこ一覧を表示
 - **根っこクリック:** 根拠となるログ原文（transcript）を逆引き
 
-### 3.6 価値観の倉庫✅
+### 3.6 価値観の倉庫 ✅
 
 - **価値観カード一覧:** 蓄積された価値観をレベル順に表示
 - **カード展開:** クリックで 宝物の解説・キーワード・発掘場所一覧を表示
 - **発掘場所クリック:** 根拠となるログ原文（transcript）を逆引き
 
-### 3.7 認証・アカウント管理 ✅
+### 3.7 カレンダー機能 ✅
+
+- 月ごとのログ記録日をカレンダー形式で表示
+- 記録のある日は緑ドットで表示、クリックでその日のログ一覧を展開
+- 月ごとのデータをキャッシュ（TTL: 60秒）してAPI呼び出しを削減
+
+### 3.8 認証・アカウント管理 ✅
 
 | 機能           | 説明                                                         |
 | -------------- | ------------------------------------------------------------ |
@@ -139,13 +148,13 @@ Next.js Route Handlers (API層)
 | ログアウト     | 設定ページから確認ダイアログ付きでログアウト                 |
 | メール確認     | ON の場合は auth/callback で user_profiles を upsert         |
 
-### 3.8 設定ページ ✅
+### 3.9 設定ページ ✅
 
 | 機能                 | 説明                                                    |
 | -------------------- | ------------------------------------------------------- |
 | 呼ばれたい名前の変更 | user_profiles.display_name を更新。変更があるときのみ保存ボタン有効 |
 | メールアドレス変更   | Supabase Auth 経由で更新                                |
-| パスワード変更       | 新パスワード + 確認入力。6文字以上バリデーション        |
+| パスワード変更       | 現在のパスワードで再認証後に変更。表示/非表示トグル付き |
 | お問い合わせフォーム | カテゴリ（不具合報告/機能要望/その他）+ 件名 + 本文。contact_messages テーブルに保存 |
 | ログアウト           | 確認ポップアップ表示後にサインアウト → /login へリダイレクト |
 
@@ -161,8 +170,8 @@ Next.js Route Handlers (API層)
 | `user_id`       | uuid        | auth.users への外部キー（RLS で保護）          |
 | `created_at`    | timestamptz | 作成日時（UTC で保存。表示はユーザーTZ変換）   |
 | `week_number`   | int         | サイクル番号（タイムゾーン対応で算出）         |
-| `transcript`    | text        | ユーザーの発言テキスト                         |
-| `emotion_score` | int         | 1〜10の感情スコア（CHECK制約付き）             |
+| `transcript`    | text        | ユーザーの発言テキスト（最大10,000文字）       |
+| `emotion_score` | int         | 1〜10の感情スコア（サーバー側で整数・範囲検証）|
 | `ai_response`   | text        | 案内人（AI）の返答                             |
 | `is_analyzed`   | boolean     | 分析使用済みフラグ（default: false）           |
 
@@ -192,12 +201,12 @@ Next.js Route Handlers (API層)
 
 ### user_profiles ✅
 
-| Column         | Type | Description                                              |
-| -------------- | ---- | -------------------------------------------------------- |
-| `id`           | uuid | auth.users の ID と紐付く主キー                          |
-| `display_name` | text | 案内人が呼びかける名前                                   |
-| `timezone`     | text | ユーザーのタイムゾーン（デフォルト: `Asia/Tokyo`）。ブラウザで自動検出・保存 |
-| `created_at`   | timestamptz | 作成日時                                         |
+| Column         | Type        | Description                                              |
+| -------------- | ----------- | -------------------------------------------------------- |
+| `id`           | uuid        | auth.users の ID と紐付く主キー                          |
+| `display_name` | text        | 案内人が呼びかける名前                                   |
+| `timezone`     | text        | ユーザーのタイムゾーン（デフォルト: `Asia/Tokyo`）。ブラウザで自動検出・保存 |
+| `created_at`   | timestamptz | 作成日時                                                 |
 
 > **RLS ポリシー（全テーブル共通）:**
 > `auth.uid() = user_id`（または `id`）で SELECT / INSERT / UPDATE を制限。ユーザー間のデータ完全分離を保証。
@@ -236,15 +245,24 @@ Next.js Route Handlers (API層)
 
 ### ホーム画面レイアウト（上から順）
 
-1. タイトル「夜の温室」+ ⚙ 設定ボタン（右端揃え）
-2. 進捗ランプ（7個。サイクル内ログ数をカウント）
-3. AI メッセージボックス（コンパクト: `min-h-[72px] p-4`）
-4. 植物アニメーション（成長ステージ）
-5. Day7 分析ボタン（条件付き表示）
-6. 感情スコア選択（1〜10）
-7. TALK ボタン
-8. 発話テキスト（録音後に表示）
-9. 強みの庭ボタン（右下固定: `fixed bottom-8 right-4 sm:right-6`）
+1. タイトル「夜の温室」+ 設定ボタン（左端・歯車SVGアイコン、`w-12 h-12`）
+2. ナビゲーションボタン行（カレンダー / 価値観の倉庫〈ダイヤモンドSVG〉/ 強みの庭〈5枚花びらSVG〉、各 `w-12 h-12`）
+3. 進捗ランプ（7個。サイクル内ログ数をカウント）
+4. AI メッセージボックス（コンパクト: `min-h-[72px] p-4`）
+5. 植物アニメーション（成長ステージ）
+6. Day7 分析ボタン（条件付き表示）
+7. 感情スコア選択（1〜10）
+8. マイクボタン + かくボタン（横並び。録音中はかくボタンを非表示）
+9. 発話テキスト（録音後に表示）
+
+### ナビゲーションアイコン
+
+| ボタン       | アイコン                                              | サイズ    |
+| ------------ | ----------------------------------------------------- | --------- |
+| 設定         | 歯車SVG（stroke）                                     | 22×22px   |
+| カレンダー   | カレンダーSVG（rect + lines）                         | 22×22px   |
+| 価値観の倉庫 | ダイヤモンドSVG（多角形 path）                        | 22×22px   |
+| 強みの庭     | 花びら5枚SVG（5つのcircle重ね + 中心filled circle）   | 22×22px   |
 
 ### カラーパレット
 
@@ -282,16 +300,19 @@ Next.js Route Handlers (API層)
 
 - Web Audio API（`AudioContext` + `AnalyserNode`）でマイク音量をリアルタイム計測
 - `useMotionValue` → `useSpring`（damping: 18, stiffness: 200）でスムーズに平滑化
+- RAF ループは~10fps（100msインターバル）にスロットルしてCPU負荷を抑制
+- 録音停止時にアナライザー参照を null クリアしてループを自己終了させる（RAF キャンセル競合を防止）
 - `useTransform` で opacity に変換: 入力 `[0, 0.2]` → 出力 `[0, 0.88]`
-- 土の背後に emerald-300 グロー楕円（`rx=72 ry=24 blur=30px`）を描画
-- 録音停止時に rawVolume を 0 にリセット
+- 土の背後に emerald-300 グロー楕円を描画。ぼかしには SVG ネイティブの `<feGaussianBlur>`（iOS Safari 対応）
 
-**調整パラメータ（`PlantAnimation.tsx` 55行目付近）:**
+**iOS Safari 対応:**
+CSS `filter: blur()` はiOS SafariのSVG要素で動作しないため、SVG `<defs>` 内の `<filter>` + `<feGaussianBlur>` を使用。
+
+**調整パラメータ（`PlantAnimation.tsx`）:**
 ```
 const opacity = useTransform(volume, [0, 0.2], [0, 0.88]);
 // [0, 0.2]: 入力レンジ（小さいほど敏感）
 // [0, 0.88]: 出力レンジ（大きいほど明るい）
-// グロー楕円サイズ: rx="72" ry="24" / blur: "30px"
 ```
 
 ---
@@ -300,12 +321,26 @@ const opacity = useTransform(volume, [0, 0.2], [0, 0.88]);
 
 ### 認証・セキュリティ
 
-| カテゴリ         | 要件                                     | 実装方法                              |
-| ---------------- | ---------------------------------------- | ------------------------------------- |
-| 認証             | Supabase Auth（email + password）        | 新規登録・ログイン。Cookie セッション |
-| データ分離       | ユーザー間のデータ完全分離               | RLS: `auth.uid() = user_id`           |
-| 音声プライバシー | 音声データはサーバーに送信・保存しない   | Web Speech API はブラウザ内処理       |
-| APIキー保護      | Gemini APIキーをクライアントに露出しない | Route Handler 経由のみ                |
+| カテゴリ           | 要件                                     | 実装方法                              |
+| ------------------ | ---------------------------------------- | ------------------------------------- |
+| 認証               | Supabase Auth（email + password）        | 新規登録・ログイン。Cookie セッション |
+| API認証            | 全書き込みAPIで認証チェック。未認証は401 | `supabase.auth.getUser()` + 早期return |
+| データ分離         | ユーザー間のデータ完全分離               | RLS: `auth.uid() = user_id`           |
+| 入力バリデーション | log_id はUUID形式チェック。emotion_score は整数1〜10チェック。transcript は10,000文字上限 | サーバー側で検証 |
+| 音声プライバシー   | 音声データはサーバーに送信・保存しない   | Web Speech API はブラウザ内処理       |
+| APIキー保護        | Gemini APIキーをクライアントに露出しない | Route Handler 経由のみ                |
+| レート制限         | analyze APIは24時間に1回まで             | 最新 `is_analyzed=true` ログの `updated_at` で経過時間チェック |
+
+### 定数管理
+
+`lib/constants.ts` に一元管理:
+
+```ts
+DAY_START_HOUR = 5        // 1日の切り替わり時刻（午前5時）
+EMOTION_SCORE_MIN = 1     // 感情スコア最小値
+EMOTION_SCORE_MAX = 10    // 感情スコア最大値
+TRANSCRIPT_MAX = 10_000   // transcript 最大文字数
+```
 
 ### コスト管理
 
@@ -318,15 +353,17 @@ const opacity = useTransform(volume, [0, 0.2], [0, 0.88]);
 ### 対応環境
 
 - **推奨ブラウザ:** Chrome 最新版（Web Speech API の制約）
-- **フォールバック:** Safari/Firefox ではテキスト入力を提供
+- **フォールバック:** Safari/Firefox では「かく」ボタンによるテキスト入力を提供
 - **スマートフォン:** iOS Safari / Android Chrome 対応。レスポンシブ実装済み
+- **iOS Safari 注意点:** SVG blur は CSS `filter` でなく `<feGaussianBlur>` を使用
 
 ### タイムゾーン対応
 
 - `daily_logs.created_at` は UTC で保存（Supabase デフォルト）
 - ブラウザで `Intl.DateTimeFormat().resolvedOptions().timeZone` を検出し `user_profiles.timezone` に自動保存
 - API 側（`/api/logs`, `/api/status`）で `lib/date-utils.ts` の `calcWeekNumber()` を使い、ユーザーの暦日ベースで week_number を算出
-- JST深夜0〜9時（UTC前日15〜24時）のログも正しく当日として扱われる
+- `calcWeekNumber` は `now` パラメータでテスタブル設計。負値防止で `Math.max(1, ...)` を適用
+- JST深夜0〜5時（`DAY_START_HOUR` 前）のログは前日扱い（`appDateStr` による5時シフト）
 
 ### デプロイ・CI/CD
 
@@ -346,26 +383,37 @@ const opacity = useTransform(volume, [0, 0.2], [0, 0.88]);
 
 ```
 app/
-  page.tsx                  # メイン画面（ログ記録・植物・感情スコア・TALK）
+  page.tsx                  # メイン画面（ログ記録・植物・感情スコア・マイク・かく）
   login/page.tsx            # ログイン・新規登録（email + password）
   settings/page.tsx         # 設定ページ（名前・メール・パスワード・お問い合わせ・ログアウト）
+  calendar/page.tsx         # カレンダー（過去ログの日付ブラウズ。60秒キャッシュ）
   seeds/page.tsx            # 強みの庭（花カード一覧・詳細展開）
+  treasures/page.tsx        # 価値観の倉庫（価値観カード一覧・詳細展開）
   auth/callback/route.ts    # メール確認後のコールバック（user_profiles upsert）
   api/
-    logs/route.ts           # ログ保存 + AI 返答生成（タイムゾーン対応・名前呼びかけ）
-    status/route.ts         # 週次ステータス取得（タイムゾーン対応）
-    analyze/route.ts        # 7日分析実行（Gemini）
+    logs/route.ts           # ログ保存 POST / 更新 PUT（認証必須・バリデーション強化）
+    status/route.ts         # 週次ステータス取得（today_log_id / transcript / count含む）
+    analyze/route.ts        # 7日分析実行（Gemini。24時間レート制限）
+    calendar/route.ts       # 月ごとのログ日付一覧
+    calendar/[date]/route.ts# 指定日のログ一覧
     flowers/route.ts        # 花コレクション取得
     contact/route.ts        # お問い合わせ送信
 
 components/
-  PlantAnimation.tsx        # 植物SVGアニメーション（6ステージ + 音量グロー）
+  PlantAnimation.tsx        # 植物SVGアニメーション（6ステージ + 音量グロー。iOS対応blur）
+  Onboarding.tsx            # オンボーディング（話す・かく・カレンダー等の説明）
+
+hooks/
+  useVolumeTracker.ts       # Web Audio API音量トラッキング + Framer Motion smoothVolume
+  useSpeechRecognition.ts   # Web Speech API初期化・transcript管理
 
 lib/
   supabase.ts               # ブラウザ用 Supabase クライアント
   supabase-server.ts        # サーバー用 Supabase クライアント（@supabase/ssr）
   prompts.ts                # AI プロンプト定数（GUIDE_SYSTEM_PROMPT は displayName 引数あり）
-  date-utils.ts             # タイムゾーン対応日付計算ユーティリティ
+  date-utils.ts             # タイムゾーン対応日付計算（calcWeekNumber / appDateStr / getMonthUTCRange等）
+  constants.ts              # 共通定数（DAY_START_HOUR / EMOTION_SCORE_MIN/MAX / TRANSCRIPT_MAX）
+  messages.ts               # 案内人メッセージ（getQuestion / getResponse）
 
 middleware.ts               # 認証ガード（未ログイン → /login リダイレクト）
 
@@ -395,7 +443,7 @@ supabase/migrations/
 ### Phase 1 — ログ記録フロー ✅
 
 - [x] 感情スコア UI 実装（1〜10、タッチターゲット 44px）
-- [x] Web Speech API 統合（TALK/STOP ボタン）
+- [x] Web Speech API 統合（マイクボタン/停止ボタン）
 - [x] 案内人 AI 応答実装（Gemini Route Handler）
 - [x] ログ永続化（Supabase INSERT）
 - [x] middleware.ts による認証ガード
@@ -428,13 +476,22 @@ supabase/migrations/
 - [x] パーソナライズ（名前呼びかけ: UI + AI プロンプト両方）
 - [x] タイムゾーン対応（ブラウザ自動検出・保存。week_number 算出に使用）
 
-### Phase 5 — 今後の候補
+### Phase 5 — 品質・UX強化 ✅
 
-- [ ] 1日1回制限の実装（last_posted_at による制御）
-- [ ] オンボーディング（案内人との最初の挨拶）
-- [x] カレンダー機能（過去ログの日付ブラウズ）
-- [ ] テキスト入力フォールバック（Safari/Firefox 対応）
+- [x] カレンダー機能（過去ログの日付ブラウズ。60秒TTLキャッシュ）
+- [x] テキスト入力「かく」ボタン（Safari/Firefox フォールバック兼用）
+- [x] オンボーディング（初回訪問時の機能説明ツアー）
+- [x] 複数ログ対応（同日2回目以降: 追加/更新ポップアップ）
+- [x] SVGアイコン化（マイク・鉛筆+ノート・停止・ナビゲーション各種）
+- [x] iOS Safari 音量グロー修正（`<feGaussianBlur>` 対応）
+- [x] セキュリティ強化（POST認証必須・UUID検証・emotionScore検証・analyze レート制限）
+- [x] RAFスロットル（~10fps）・cycleLogCount負値防止・constants.ts一元管理
+- [x] カスタムフック分離（`useVolumeTracker`・`useSpeechRecognition`）
+
+### 今後の候補
+
 - [ ] プッシュ通知（毎晩のリマインダー）
+- [ ] アニメーション強化（Framer Motion）
 
 ---
 
@@ -455,3 +512,15 @@ supabase/migrations/
 | 2026-03-07 | タイムゾーン対応（lib/date-utils.ts）。JST深夜ログのズレ修正                            |
 | 2026-03-07 | パーソナライズ実装（名前呼びかけ: デフォルト挨拶文 + Gemini プロンプト両方）            |
 | 2026-03-07 | user_profiles.timezone をブラウザで自動検出・保存するよう実装                           |
+| 2026-03-08 | 「やり直す」ボタンを廃止。マイク + かくボタン常時表示に変更（SVGアイコン化）            |
+| 2026-03-08 | 「かく」ボタン追加（テキスト入力モーダル。Safari/Firefox フォールバック兼用）           |
+| 2026-03-08 | 同日複数ログ対応: 2回目以降はポップアップで追加/更新を選択。ログカウントを表示          |
+| 2026-03-08 | ポップアップのタイミングを録音/入力の前に変更（ボタン押下 → ポップアップ → 録音/入力）  |
+| 2026-03-08 | ナビゲーションアイコン変更（強みの庭: 5枚花びらSVG、価値観: ダイヤモンドSVG）+ 大型化  |
+| 2026-03-08 | iOS Safari 音量グローの blur を CSS → SVG `<feGaussianBlur>` に変更                    |
+| 2026-03-08 | RAFループ停止バグ修正: analyserRef を null クリアしてループを自己終了させる方式に変更   |
+| 2026-03-08 | セキュリティ強化: POST未認証401返却・log_id UUID検証・emotionScore整数範囲検証          |
+| 2026-03-08 | analyze APIにレート制限追加（24時間1回。残り時間を分単位で返す）                        |
+| 2026-03-08 | lib/constants.ts 新設。DAY_START_HOUR / EMOTION_SCORE_MIN/MAX / TRANSCRIPT_MAX を一元管理 |
+| 2026-03-08 | カスタムフック分離: hooks/useVolumeTracker.ts・hooks/useSpeechRecognition.ts 新設       |
+| 2026-03-08 | calcWeekNumber に now パラメータ追加（テスタビリティ向上）。Math.max(1, ...) で負値防止 |
