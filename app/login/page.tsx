@@ -209,7 +209,7 @@ function LoginForm() {
           </button>
         </form>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
+        <form onSubmit={handleSubmit} className="space-y-4" autoComplete={mode === "signup" ? "off" : undefined}>
           {mode === "signup" && (
             <div className="space-y-2">
               <label className="text-xs text-slate-400">呼ばれたい名前</label>
@@ -228,6 +228,8 @@ function LoginForm() {
           <div className="space-y-2">
             <label className="text-xs text-slate-400">メールアドレス</label>
             <input
+              id="email"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -252,6 +254,8 @@ function LoginForm() {
               )}
             </div>
             <input
+              id="password"
+              name="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
