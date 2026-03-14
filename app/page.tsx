@@ -44,9 +44,7 @@ export default function NightGreenhouse() {
   const [analyzeResult, setAnalyzeResult] = useState<AnalyzeResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  // loadProfile と fetchDayStatus の両方が完了したら true → メッセージ表示確定
   const [initialized, setInitialized] = useState(false);
-  const initDoneRef = useRef(0); // 完了した初期化の数（2になったら描画開始）
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [todayLogId, setTodayLogId] = useState<string | null>(null);
   const [todayLogTranscript, setTodayLogTranscript] = useState<string | null>(null);
@@ -66,39 +64,6 @@ export default function NightGreenhouse() {
   }, []);
 
   useEffect(() => {
-    // プロフィール取得 + タイムゾーン自動保存
-    const loadProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        // 未認証時もカウントを進めて fetchDayStatus 完了だけで描画を解放できるようにする
-        if (++initDoneRef.current >= 2) setInitialized(true);
-        return;
-      }
-
-      const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-      const { data: profile } = await supabase
-        .from("user_profiles")
-        .select("display_name, timezone")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      setDisplayName(profile?.display_name ?? "");
-
-      // ブラウザのタイムゾーンが未保存 or 変わっていたら更新
-      if (!profile || profile.timezone !== browserTz) {
-        await supabase
-          .from("user_profiles")
-          .upsert({ id: user.id, timezone: browserTz });
-      }
-
-      // 初期化カウントを進め、両方完了したら描画を解放
-      if (++initDoneRef.current >= 2) setInitialized(true);
-    };
-    loadProfile();
-  }, []);
-
-  useEffect(() => {
     fetchDayStatus();
   }, []);
 
@@ -111,12 +76,20 @@ export default function NightGreenhouse() {
         setTodayLogId(data.today_log_id ?? null);
         setTodayLogTranscript(data.today_log_transcript ?? null);
         setTodayLogCount(data.today_log_count ?? 0);
+        if (data.display_name) setDisplayName(data.display_name);
         // 初回のみDBから未分析ログ数でカウントを初期化
         if (!cycleInitialized.current) {
           setCycleLogCount(data.alreadyAnalyzed ? 0 : (data.unanalyzedCount ?? 0));
           cycleInitialized.current = true;
-          // 初期化カウントを進め、両方完了したら描画を解放
-          if (++initDoneRef.current >= 2) setInitialized(true);
+          setInitialized(true);
+          // タイムゾーンがずれていたらバックグラウンドで更新（描画をブロックしない）
+          const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          if (data.timezone && data.timezone !== browserTz) {
+            void (async () => {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (user) await supabase.from("user_profiles").upsert({ id: user.id, timezone: browserTz });
+            })();
+          }
         }
       }
     } catch { }
@@ -378,7 +351,7 @@ export default function NightGreenhouse() {
       </div>
 
       {/* 案内人のメッセージ — initialized まではプレースホルダーでレイアウトを固定 */}
-      <div className="max-w-md w-full min-h-[72px] p-4 bg-slate-900/40 rounded-2xl border border-emerald-900/30 backdrop-blur-sm">
+      <div className="max-w-md w-full min-h-18 p-4 bg-slate-900/40 rounded-2xl border border-emerald-900/30 backdrop-blur-sm">
         {!initialized || isLoading ? (
           <p className="text-slate-800 animate-pulse text-sm select-none">…</p>
         ) : errorMsg ? (

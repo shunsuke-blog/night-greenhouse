@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
-import { calcWeekNumber, getDayUTCRange, localDateStr, appDateStr } from "@/lib/date-utils";
+import { calcWeekNumber, getDayUTCRange, appDateStr } from "@/lib/date-utils";
 
 export async function GET() {
   try {
@@ -10,53 +10,56 @@ export async function GET() {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
-    // ユーザーのタイムゾーンを取得
-    const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("timezone")
-      .eq("id", user.id)
-      .maybeSingle();
-    const timezone = profile?.timezone ?? "Asia/Tokyo";
+    // Step1: プロフィール + 最初のログを並列取得
+    const [profileResult, firstLogResult] = await Promise.all([
+      supabase
+        .from("user_profiles")
+        .select("timezone, display_name")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("daily_logs")
+        .select("created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .single(),
+    ]);
 
-    // 最初のログから週番号を計算（タイムゾーン対応）
-    const { data: firstLog } = await supabase
-      .from("daily_logs")
-      .select("created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .single();
-
-    const weekNumber = firstLog
-      ? calcWeekNumber(new Date(firstLog.created_at), timezone)
+    const timezone = profileResult.data?.timezone ?? "Asia/Tokyo";
+    const displayName = profileResult.data?.display_name ?? "";
+    const weekNumber = firstLogResult.data
+      ? calcWeekNumber(new Date(firstLogResult.data.created_at), timezone)
       : 1;
 
-    // 今週のログを取得（is_analyzed フラグ込み）
-    const { data: weekLogs } = await supabase
-      .from("daily_logs")
-      .select("id, is_analyzed")
-      .eq("user_id", user.id)
-      .eq("week_number", weekNumber);
-
-    const totalCount = weekLogs?.length ?? 0;
-    const unanalyzedCount = weekLogs?.filter(l => !l.is_analyzed).length ?? 0;
-    const alreadyAnalyzed = totalCount >= 7 && (weekLogs?.every(l => l.is_analyzed) ?? false);
-
-    // 今日のログを取得（日付切り替わりは午前5時）
+    // Step2: 今週のログ + 今日のログを並列取得
     const today = appDateStr(new Date(), timezone);
     const { gte, lt } = getDayUTCRange(today);
-    const { data: todayLogs } = await supabase
-      .from("daily_logs")
-      .select("id, created_at, transcript")
-      .eq("user_id", user.id)
-      .gte("created_at", gte)
-      .lt("created_at", lt)
-      .order("created_at", { ascending: false });
 
-    const todayLogsFiltered = todayLogs?.filter(
+    const [weekLogsResult, todayLogsResult] = await Promise.all([
+      supabase
+        .from("daily_logs")
+        .select("id, is_analyzed")
+        .eq("user_id", user.id)
+        .eq("week_number", weekNumber),
+      supabase
+        .from("daily_logs")
+        .select("id, created_at, transcript")
+        .eq("user_id", user.id)
+        .gte("created_at", gte)
+        .lt("created_at", lt)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    const weekLogs = weekLogsResult.data ?? [];
+    const totalCount = weekLogs.length;
+    const unanalyzedCount = weekLogs.filter(l => !l.is_analyzed).length;
+    const alreadyAnalyzed = totalCount >= 7 && weekLogs.every(l => l.is_analyzed);
+
+    const todayLogsFiltered = (todayLogsResult.data ?? []).filter(
       l => appDateStr(new Date(l.created_at), timezone) === today
-    ) ?? [];
-    const todayLog = todayLogsFiltered[0]; // 最新ログ
+    );
+    const todayLog = todayLogsFiltered[0];
 
     return NextResponse.json({
       weekNumber,
@@ -67,8 +70,11 @@ export async function GET() {
       today_log_id: todayLog?.id ?? null,
       today_log_transcript: todayLog?.transcript ?? null,
       today_log_count: todayLogsFiltered.length,
+      display_name: displayName,
+      timezone,
     });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
