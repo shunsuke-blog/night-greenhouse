@@ -108,6 +108,8 @@ export async function POST() {
 
       let flower_id: string;
 
+      const flowerLevelGain = Math.ceil(Math.sqrt(rootEntries.length));
+
       if (!fragment.is_new_flower && fragment.flower_id) {
         flower_id = fragment.flower_id;
         const { data: current } = await supabase
@@ -118,7 +120,7 @@ export async function POST() {
         if (current) {
           await supabase
             .from("flower_collection")
-            .update({ level: current.level + 1 })
+            .update({ level: current.level + flowerLevelGain })
             .eq("id", flower_id);
         }
       } else {
@@ -133,7 +135,7 @@ export async function POST() {
           if (current) {
             await supabase
               .from("flower_collection")
-              .update({ level: current.level + 1 })
+              .update({ level: current.level + flowerLevelGain })
               .eq("id", flower_id);
           }
         } else {
@@ -191,6 +193,8 @@ export async function POST() {
 
       let treasure_id: string;
 
+      const treasureLevelGain = Math.ceil(Math.sqrt(siteEntries.length));
+
       if (!fragment.is_new_treasure && fragment.treasure_id) {
         treasure_id = fragment.treasure_id;
         const { data: current } = await supabase
@@ -201,7 +205,7 @@ export async function POST() {
         if (current) {
           await supabase
             .from("treasure_collection")
-            .update({ level: current.level + 1 })
+            .update({ level: current.level + treasureLevelGain })
             .eq("id", treasure_id);
         }
       } else {
@@ -216,7 +220,7 @@ export async function POST() {
           if (current) {
             await supabase
               .from("treasure_collection")
-              .update({ level: current.level + 1 })
+              .update({ level: current.level + treasureLevelGain })
               .eq("id", treasure_id);
           }
         } else {
