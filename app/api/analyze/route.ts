@@ -2,10 +2,11 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { FRAGMENT_ANALYZE_PROMPT, VALUE_ANALYZE_PROMPT } from "@/lib/prompts";
+import { getAnalysisStatus } from "@/lib/subscription";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -13,9 +14,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
-    const { week_number } = await req.json();
-    if (!Number.isInteger(week_number) || week_number < 1) {
-      return NextResponse.json({ error: "week_number が不正です" }, { status: 400 });
+    // 分析可否チェック
+    const status = await getAnalysisStatus(supabase, user.id);
+    if (!status.canAnalyze) {
+      if (status.freeAnalysesLeft === 0 && !status.isSubscribed) {
+        return NextResponse.json({ error: "subscription_required" }, { status: 402 });
+      }
+      return NextResponse.json(
+        { error: `あと ${status.logsUntilNextAnalysis} 件のログで分析できます` },
+        { status: 400 }
+      );
     }
 
     // レート制限: 直近の分析完了から24時間以内は拒否
@@ -40,24 +48,16 @@ export async function POST(req: Request) {
       }
     }
 
-    // 対象週のログを取得
+    // 未分析ログを取得（前回分析以降の全件）
     const { data: logs, error: logsError } = await supabase
       .from("daily_logs")
       .select("id, transcript, emotion_score, is_analyzed")
       .eq("user_id", user.id)
-      .eq("week_number", week_number)
+      .eq("is_analyzed", false)
       .order("created_at", { ascending: true });
 
-    if (logsError || !logs || logs.length < 7) {
-      return NextResponse.json(
-        { error: `7日分のログが必要です（現在 ${logs?.length ?? 0} 日分）` },
-        { status: 400 }
-      );
-    }
-
-    // 分析済みチェック
-    if (logs.every(l => l.is_analyzed)) {
-      return NextResponse.json({ error: "この週はすでに分析済みです" }, { status: 409 });
+    if (logsError || !logs || logs.length === 0) {
+      return NextResponse.json({ error: "分析対象のログがありません" }, { status: 400 });
     }
 
     const logInputs = logs.map((l, i) => ({
@@ -246,11 +246,25 @@ export async function POST(req: Request) {
     }
 
     // ログを分析済みにマーク
+    const logIds = logs.map(l => l.id);
     await supabase
       .from("daily_logs")
       .update({ is_analyzed: true })
-      .eq("user_id", user.id)
-      .eq("week_number", week_number);
+      .in("id", logIds);
+
+    // 累計ログ数を取得してプロフィール更新
+    const { count: totalLogsCount } = await supabase
+      .from("daily_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    await supabase
+      .from("user_profiles")
+      .update({
+        total_analyses_count: status.totalAnalysesCount + 1,
+        total_logs_at_last_analysis: totalLogsCount ?? 0,
+      })
+      .eq("id", user.id);
 
     // 更新後の花・価値観一覧を返す（並列）
     const [{ data: updatedFlowers }, { data: updatedTreasures }] = await Promise.all([
@@ -272,8 +286,9 @@ export async function POST(req: Request) {
       treasures: updatedTreasures ?? [],
       treasure_count: treasureFragments.length,
     });
-  } catch (error: any) {
-    console.error("Analyze Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    console.error("Analyze Error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

@@ -1,7 +1,9 @@
 "use client";
 export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 type Root = {
   id: string;
@@ -119,13 +121,31 @@ function FlowerCard({ flower }: { flower: Flower }) {
 export default function FlowersPage() {
   const [flowers, setFlowers] = useState<Flower[]>([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    fetch("/api/flowers")
-      .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setFlowers(data); })
-      .finally(() => setLoading(false));
-  }, []);
+    void (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push("/login"); return; }
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("is_admin, subscription_status, created_at")
+        .eq("id", user.id)
+        .maybeSingle();
+      const withinFreePeriod = profile?.created_at
+        ? new Date(profile.created_at).getTime() + 7 * 24 * 60 * 60 * 1000 > Date.now()
+        : false;
+      const hasAccess =
+        profile?.is_admin ||
+        profile?.subscription_status === "active" ||
+        withinFreePeriod;
+      if (!hasAccess) { router.push("/upgrade"); return; }
+      fetch("/api/flowers")
+        .then((r) => r.json())
+        .then((data) => { if (Array.isArray(data)) setFlowers(data); })
+        .finally(() => setLoading(false));
+    })();
+  }, [router]);
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-200 px-4 py-6 sm:px-6 max-w-lg mx-auto space-y-6">

@@ -18,11 +18,14 @@ type AnalyzeResult = {
 };
 
 type DayStatus = {
-  logCount: number;
   unanalyzedCount: number;
   weekNumber: number;
-  isDay7Ready: boolean;
-  alreadyAnalyzed: boolean;
+  canAnalyze: boolean;
+  freeAnalysesLeft: number;
+  isSubscribed: boolean;
+  totalAnalysesCount: number;
+  cycleTarget: number;
+  logsUntilNextAnalysis: number;
   today_log_id: string | null;
   today_log_transcript: string | null;
   today_log_count: number;
@@ -79,7 +82,7 @@ export default function NightGreenhouse() {
         if (data.display_name) setDisplayName(data.display_name);
         // 初回のみDBから未分析ログ数でカウントを初期化
         if (!cycleInitialized.current) {
-          setCycleLogCount(data.alreadyAnalyzed ? 0 : (data.unanalyzedCount ?? 0));
+          setCycleLogCount(data.unanalyzedCount ?? 0);
           cycleInitialized.current = true;
           setInitialized(true);
           // タイムゾーンがずれていたらバックグラウンドで更新（描画をブロックしない）
@@ -184,11 +187,7 @@ export default function NightGreenhouse() {
     if (!dayStatus) return;
     setIsAnalyzing(true);
     try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ week_number: dayStatus.weekNumber }),
-      });
+      const res = await fetch("/api/analyze", { method: "POST" });
       const data = await res.json();
       if (res.ok) {
         setAnalyzeResult(data);
@@ -338,7 +337,7 @@ export default function NightGreenhouse() {
 
       {/* ログカウント（進捗ランプ）— 常にレンダリングしてレイアウトシフトを防ぐ */}
       <div data-onboarding="progress-lamps" className="flex gap-2 items-center">
-        {Array.from({ length: 7 }, (_, i) => (
+        {Array.from({ length: dayStatus?.cycleTarget ?? 7 }, (_, i) => (
           <div
             key={i}
             className={`w-3 h-3 rounded-full transition-all ${i < cycleLogCount
@@ -347,7 +346,9 @@ export default function NightGreenhouse() {
               }`}
           />
         ))}
-        <span className="text-xs text-slate-600 ml-1">{cycleLogCount}/7日</span>
+        <span className="text-xs text-slate-600 ml-1">
+          {cycleLogCount}/{dayStatus?.cycleTarget ?? 7}日
+        </span>
       </div>
 
       {/* 案内人のメッセージ — initialized まではプレースホルダーでレイアウトを固定 */}
@@ -368,18 +369,32 @@ export default function NightGreenhouse() {
         <PlantAnimation stage={plantStage} volume={smoothVolume} />
       </div>
 
-      {/* Day7 分析ボタン */}
-      {cycleLogCount >= 7 && !dayStatus?.alreadyAnalyzed && (
+      {/* 分析ボタン */}
+      {dayStatus?.canAnalyze && (
         <div className="max-w-md w-full">
           <button
             onClick={runAnalyze}
             disabled={isAnalyzing}
             className="w-full py-4 bg-emerald-900/30 border border-emerald-700/50 rounded-2xl text-emerald-300 text-sm tracking-wide hover:bg-emerald-900/50 transition-all disabled:opacity-50"
           >
-            {isAnalyzing ? "強みの花が咲いています..." : "✦ 今週の強みの花を咲かせる"}
+            {isAnalyzing ? "強みの花が咲いています..." : "✦ 強みの花を咲かせる"}
           </button>
           <p className="text-center text-xs text-slate-600 mt-2">
-            7つのログから強みの断片を抽出します
+            {cycleLogCount}つのログから強みと価値観を抽出します
+          </p>
+        </div>
+      )}
+      {/* 無料分析上限到達 → サブスク誘導ボタン */}
+      {!dayStatus?.canAnalyze && dayStatus?.freeAnalysesLeft === 0 && !dayStatus?.isSubscribed && (
+        <div className="max-w-md w-full">
+          <button
+            onClick={() => router.push("/upgrade")}
+            className="w-full py-4 bg-slate-800/60 border border-slate-700 rounded-2xl text-slate-400 text-sm tracking-wide hover:bg-slate-800 hover:border-slate-500 transition-all"
+          >
+            ✦ 続けて強みの花を咲かせる
+          </button>
+          <p className="text-center text-xs text-slate-600 mt-2">
+            月額プランで引き続き分析できます
           </p>
         </div>
       )}

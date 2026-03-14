@@ -425,6 +425,30 @@ export default function SettingsPage() {
           )}
         </section>
 
+        {/* サブスクリプション管理 */}
+        <section className={sectionClass}>
+          <p className="text-xs text-slate-400 tracking-wide">プラン・お支払い</p>
+          <div className="flex gap-2">
+            <a
+              href="/upgrade"
+              className="flex-1 py-2 text-center border border-slate-700 rounded-xl text-slate-400 text-xs hover:border-slate-500 transition-colors"
+            >
+              プランを確認する
+            </a>
+            <button
+              type="button"
+              onClick={async () => {
+                const res = await fetch("/api/stripe/create-portal", { method: "POST" });
+                const data = await res.json();
+                if (data.url) window.location.href = data.url;
+              }}
+              className="flex-1 py-2 border border-slate-700 rounded-xl text-slate-400 text-xs hover:border-slate-500 transition-colors"
+            >
+              支払い管理
+            </button>
+          </div>
+        </section>
+
         {/* ログアウト */}
         <button
           onClick={() => setShowLogoutConfirm(true)}
