@@ -12,7 +12,7 @@ export async function GET() {
     // 価値観一覧をレベル降順で取得
     const { data: treasures, error } = await supabase
       .from("treasure_collection")
-      .select("id, treasure_name, level, description, keywords")
+      .select("id, treasure_name, level, description, keywords, fulfillment_state, threat_signal")
       .eq("user_id", user.id)
       .order("level", { ascending: false });
 

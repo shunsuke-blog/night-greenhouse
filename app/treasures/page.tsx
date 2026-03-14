@@ -22,6 +22,8 @@ type Treasure = {
   level: number;
   description: string | null;
   keywords: string[] | null;
+  fulfillment_state: string | null;
+  threat_signal: string | null;
   sites: DigSite[];
 };
 
@@ -63,6 +65,18 @@ function TreasureCard({ treasure }: { treasure: Treasure }) {
               <div className="space-y-1">
                 <p className="text-xs text-amber-700 tracking-wider">宝物の解説</p>
                 <p className="text-sm text-slate-300 leading-relaxed">{treasure.description}</p>
+              </div>
+            )}
+            {treasure.fulfillment_state && (
+              <div className="space-y-1">
+                <p className="text-xs text-amber-700 tracking-wider">✦ さらに光輝かせるために</p>
+                <p className="text-sm text-slate-300 leading-relaxed">{treasure.fulfillment_state}</p>
+              </div>
+            )}
+            {treasure.threat_signal && (
+              <div className="space-y-1">
+                <p className="text-xs text-amber-700 tracking-wider">⚠ 宝を失わないために</p>
+                <p className="text-sm text-slate-300 leading-relaxed">{treasure.threat_signal}</p>
               </div>
             )}
             {treasure.keywords && treasure.keywords.length > 0 && (
