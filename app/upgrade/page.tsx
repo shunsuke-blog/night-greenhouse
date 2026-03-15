@@ -38,15 +38,21 @@ function UpgradeContent() {
 
   const handleCheckout = async () => {
     setLoading(true);
-    const res = await fetch("/api/stripe/create-checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan: selectedPlan }),
-    });
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
+    try {
+      const res = await fetch("/api/stripe/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: selectedPlan }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error ?? "決済ページへの遷移に失敗しました");
+        setLoading(false);
+      }
+    } catch (e) {
+      alert("通信エラーが発生しました");
       setLoading(false);
     }
   };
