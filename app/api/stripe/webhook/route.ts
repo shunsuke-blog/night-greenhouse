@@ -69,12 +69,17 @@ export async function POST(req: NextRequest) {
 
       const priceId = subscription.items.data[0]?.price?.id ?? "";
       const planType = priceId === process.env.STRIPE_PRICE_ID_YEARLY ? "yearly" : "monthly";
+      const item = subscription.items.data[0] as any;
+      const periodEnd = subscription.current_period_end
+        ?? item?.current_period_end
+        ?? null;
+      console.log("[webhook] current_period_end:", subscription.current_period_end, "item:", item?.current_period_end, "resolved:", periodEnd);
 
       await supabase
         .from("user_profiles")
         .update({
           subscription_status: toAppStatus(subscription.status),
-          current_period_end: periodEndISO(subscription),
+          current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
           plan_type: planType,
         })
         .eq("stripe_customer_id", customerId);
