@@ -6,12 +6,10 @@ import type Stripe from "stripe";
 // Next.js がボディを自動パースしないよう raw text で読む
 export const runtime = "nodejs";
 
-// 新 Stripe API バージョンで型定義が変わったため、期間終了日は拡張型でアクセス
-type SubWithPeriod = Stripe.Subscription & { current_period_end?: number };
-
-function periodEndISO(sub: SubWithPeriod): string | undefined {
-  if (!sub.current_period_end) return undefined;
-  return new Date(sub.current_period_end * 1000).toISOString();
+function periodEndISO(sub: any): string | null {
+  const ts: number | undefined = sub.current_period_end ?? sub.items?.data?.[0]?.current_period_end;
+  if (!ts) return null;
+  return new Date(ts * 1000).toISOString();
 }
 
 /** Stripe subscription status → アプリ側の subscription_status */
@@ -69,11 +67,10 @@ export async function POST(req: NextRequest) {
 
       const priceId = subscription.items.data[0]?.price?.id ?? "";
       const planType = priceId === process.env.STRIPE_PRICE_ID_YEARLY ? "yearly" : "monthly";
-      const item = subscription.items.data[0] as any;
-      const periodEnd = subscription.current_period_end
-        ?? item?.current_period_end
-        ?? null;
-      console.log("[webhook] current_period_end:", subscription.current_period_end, "item:", item?.current_period_end, "resolved:", periodEnd);
+      const sub = subscription as any;
+      const item = sub.items?.data?.[0];
+      const periodEnd: number | null = sub.current_period_end ?? item?.current_period_end ?? null;
+      console.log("[webhook] periodEnd:", periodEnd);
 
       await supabase
         .from("user_profiles")
@@ -87,7 +84,7 @@ export async function POST(req: NextRequest) {
     }
 
     case "customer.subscription.updated": {
-      const subscription = event.data.object as Stripe.Subscription;
+      const subscription = event.data.object as any;
       const customerId = subscription.customer as string;
 
       await supabase
@@ -101,7 +98,7 @@ export async function POST(req: NextRequest) {
     }
 
     case "customer.subscription.deleted": {
-      const subscription = event.data.object as SubWithPeriod;
+      const subscription = event.data.object as any;
       const customerId = subscription.customer as string;
 
       await supabase
