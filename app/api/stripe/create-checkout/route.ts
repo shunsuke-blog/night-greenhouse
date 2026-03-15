@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { stripe } from "@/lib/stripe";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    const { plan } = await req.json().catch(() => ({ plan: "monthly" }));
+    const priceId = plan === "yearly"
+      ? process.env.STRIPE_PRICE_ID_YEARLY!
+      : process.env.STRIPE_PRICE_ID_MONTHLY!;
+
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -43,7 +48,7 @@ export async function POST() {
       payment_method_types: ["card"],
       line_items: [
         {
-          price: process.env.STRIPE_PRICE_ID!,
+          price: priceId,
           quantity: 1,
         },
       ],

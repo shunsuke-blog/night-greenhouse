@@ -420,7 +420,7 @@ export default function NightGreenhouse() {
       <div data-onboarding="emotion-score" className="max-w-md w-full space-y-2">
         <p className="text-xs text-slate-500 text-center">
           今の気持ちを数字で教えてください
-          <span className="ml-2 text-slate-600">（1: 不快　10:快）</span>
+          <span className="ml-2 text-slate-600">（1: 不快(悪い)　10:快(良い)）</span>
         </p>
         <div className="flex justify-between gap-1">
           {Array.from({ length: EMOTION_SCORE_MAX - EMOTION_SCORE_MIN + 1 }, (_, i) => i + EMOTION_SCORE_MIN).map((n) => (

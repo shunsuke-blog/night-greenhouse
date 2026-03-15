@@ -15,40 +15,40 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     target: "plant-animation",
     title: "記録が花を育てます",
     description:
-      "日々の想いを記録するたびに種が成長し、花が咲きます。あなたの言葉がタネの栄養になっています。",
+      "日々の想いを記録するたびにタネが成長し、花が咲きます。あなたの言葉がタネの栄養になっています。",
   },
   {
     id: "emotion-score",
     target: "emotion-score",
     title: "今の気持ちを数字で選ぶ",
     description:
-      "記録する前に、今の気持ちを 1〜10 の数字で選んでください。1 が不快、10 が快です。",
+      "記録する前に、今の気持ちを 1〜10 の数字で選んでください。1 が不快(悪い)、10 が快(良い)です。",
   },
   {
     id: "talk-button",
     target: "talk-button",
     title: "声で記録する",
     description:
-      "このボタンを押すと音声の記録が始まります。停止ボタンを押すと自動的に保存されます。",
+      "このボタンを押すと音声で想いを記録できます。停止ボタンを押すと自動的に保存されます。",
   },
   {
     id: "write-button",
     target: "write-button",
     title: "文字で記録する",
     description:
-      "このボタンを押すとテキストで記録できます。電車の中など声が出せない場所でも、その日の気持ちを残せます。",
+      "このボタンを押すとテキストで想いを記録できます。電車の中など声が出せない場所でも、その日の気持ちを残せます。",
   },
   {
     id: "calendar-button",
     target: "calendar-button",
-    title: "記録の足跡",
+    title: "記録の足跡を見る",
     description:
       "カレンダーから過去の記録をいつでも読み返せます。あなたの言葉の積み重ねがここに残ります。",
   },
   {
     id: "treasures-button",
     target: "treasures-button",
-    title: "価値観の宝庫を見る",
+    title: "宝物を見る",
     description:
       "あなたの言葉から見つかった「あなたが大切にしている価値観」が宝物として大切し保管されます。このボタンから一覧で確認することができます。",
   },

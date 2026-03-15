@@ -21,6 +21,7 @@ function UpgradeContent() {
   const [profile, setProfile] = useState<ProfileStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
 
   useEffect(() => {
     void (async () => {
@@ -37,7 +38,11 @@ function UpgradeContent() {
 
   const handleCheckout = async () => {
     setLoading(true);
-    const res = await fetch("/api/stripe/create-checkout", { method: "POST" });
+    const res = await fetch("/api/stripe/create-checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plan: selectedPlan }),
+    });
     const data = await res.json();
     if (data.url) {
       window.location.href = data.url;
@@ -93,7 +98,7 @@ function UpgradeContent() {
           <div className="space-y-1">
             <p className="text-xs text-slate-500">現在のプラン</p>
             {isActive ? (
-              <p className="text-emerald-300 text-sm">月額プラン（¥600/月）</p>
+              <p className="text-emerald-300 text-sm">月額プラン（¥450/月）</p>
             ) : (
               <p className="text-amber-300 text-sm">無料プラン</p>
             )}
@@ -109,7 +114,7 @@ function UpgradeContent() {
                     className={`w-4 h-4 rounded-full border ${i < freeUsed
                       ? "bg-emerald-600 border-emerald-500"
                       : "bg-slate-800 border-slate-700"
-                    }`}
+                      }`}
                   />
                 ))}
                 <span className="text-xs text-slate-500 ml-1">
@@ -146,10 +151,36 @@ function UpgradeContent() {
       {/* プラン説明 */}
       {!isActive && !success && (
         <div className="space-y-4">
+          {/* プラン切り替えトグル */}
+          <div className="flex rounded-xl overflow-hidden border border-slate-700">
+            <button
+              onClick={() => setSelectedPlan("monthly")}
+              className={`flex-1 py-2 text-xs transition-colors ${selectedPlan === "monthly" ? "bg-emerald-800/60 text-emerald-200" : "text-slate-500 hover:text-slate-300"}`}
+            >
+              月額
+            </button>
+            <button
+              onClick={() => setSelectedPlan("yearly")}
+              className={`flex-1 py-2 text-xs transition-colors ${selectedPlan === "yearly" ? "bg-emerald-800/60 text-emerald-200" : "text-slate-500 hover:text-slate-300"}`}
+            >
+              年額
+              <span className="ml-1.5 text-amber-400 text-xs">お得</span>
+            </button>
+          </div>
+
           <div className="p-5 bg-slate-900/40 border border-emerald-900/30 rounded-2xl space-y-4">
             <div className="flex items-baseline justify-between">
-              <p className="text-emerald-300 text-base">月額プラン</p>
-              <p className="text-emerald-400 text-lg font-light">¥600 <span className="text-xs text-slate-500">/ 月</span></p>
+              <p className="text-emerald-300 text-base">
+                {selectedPlan === "monthly" ? "月額プラン" : "年額プラン"}
+              </p>
+              {selectedPlan === "monthly" ? (
+                <p className="text-emerald-400 text-lg font-light">¥600 <span className="text-xs text-slate-500">/ 月</span></p>
+              ) : (
+                <div className="text-right">
+                  <p className="text-emerald-400 text-lg font-light">¥6,000 <span className="text-xs text-slate-500">/ 年</span></p>
+                  <p className="text-xs text-amber-400">1ヶ月分以上お得</p>
+                </div>
+              )}
             </div>
             <ul className="space-y-2">
               {[
@@ -169,7 +200,7 @@ function UpgradeContent() {
               disabled={loading}
               className="w-full py-3 bg-emerald-700/60 border border-emerald-600/50 rounded-xl text-emerald-100 text-sm tracking-wide hover:bg-emerald-700/80 transition-colors disabled:opacity-50"
             >
-              {loading ? "Stripe へ移動中..." : "月額プランで始める"}
+              {loading ? "Stripe へ移動中..." : selectedPlan === "monthly" ? "月額プランで始める" : "年額プランで始める"}
             </button>
             <p className="text-xs text-slate-600 text-center">
               クレジットカード決済 · いつでもキャンセル可能
@@ -178,22 +209,22 @@ function UpgradeContent() {
         </div>
       )}
 
-      {/* サブスク管理（アクティブ時） */}
+      {/* 解約（アクティブ時） */}
       {isActive && !success && (
         <button
           onClick={handlePortal}
           disabled={portalLoading}
-          className="w-full py-3 border border-slate-700 rounded-xl text-slate-400 text-xs hover:border-slate-500 transition-colors disabled:opacity-50"
+          className="w-full py-3 border border-red-800/60 rounded-xl text-red-400 text-xs hover:bg-red-900/20 hover:border-red-700 transition-colors disabled:opacity-50"
         >
-          {portalLoading ? "移動中..." : "支払い方法・解約の管理"}
+          {portalLoading ? "移動中..." : "解約する"}
         </button>
       )}
 
       <button
-        onClick={() => router.push("/")}
+        onClick={() => router.push("/settings")}
         className="w-full text-xs text-slate-600 hover:text-slate-400 transition-colors"
       >
-        ← 心の土壌へ戻る
+        ← 設定へ戻る
       </button>
     </div>
   );
