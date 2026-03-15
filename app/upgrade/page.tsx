@@ -21,7 +21,7 @@ function UpgradeContent() {
   const [profile, setProfile] = useState<ProfileStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("yearly");
 
   useEffect(() => {
     void (async () => {
@@ -161,10 +161,10 @@ function UpgradeContent() {
             </button>
             <button
               onClick={() => setSelectedPlan("yearly")}
-              className={`flex-1 py-2 text-xs transition-colors ${selectedPlan === "yearly" ? "bg-emerald-800/60 text-emerald-200" : "text-slate-500 hover:text-slate-300"}`}
+              className={`relative flex-1 py-2 text-xs transition-colors ${selectedPlan === "yearly" ? "bg-emerald-800/60 text-emerald-200" : "text-slate-500 hover:text-slate-300"}`}
             >
               年額
-              <span className="ml-1.5 text-amber-400 text-xs">お得</span>
+              <span className="absolute top-0.5 right-1.5 text-amber-400 text-[10px]">お得</span>
             </button>
           </div>
 
@@ -174,11 +174,11 @@ function UpgradeContent() {
                 {selectedPlan === "monthly" ? "月額プラン" : "年額プラン"}
               </p>
               {selectedPlan === "monthly" ? (
-                <p className="text-emerald-400 text-lg font-light">¥600 <span className="text-xs text-slate-500">/ 月</span></p>
+                <p className="text-emerald-400 text-lg font-light">¥480 <span className="text-xs text-slate-500">/ 月</span></p>
               ) : (
                 <div className="text-right">
-                  <p className="text-emerald-400 text-lg font-light">¥6,000 <span className="text-xs text-slate-500">/ 年</span></p>
-                  <p className="text-xs text-amber-400">1ヶ月分以上お得</p>
+                  <p className="text-emerald-400 text-lg font-light">¥4,800 <span className="text-xs text-slate-500">/ 年</span></p>
+                  <p className="text-xs text-amber-400">¥400/月相当</p>
                 </div>
               )}
             </div>
