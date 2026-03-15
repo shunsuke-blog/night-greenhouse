@@ -152,22 +152,20 @@ function LoginForm() {
           <button
             type="button"
             onClick={() => { setMode("signin"); setError(""); setEmail(""); setPassword(""); setDisplayName(""); }}
-            className={`flex-1 py-2 text-xs transition-colors ${
-              mode === "signin"
+            className={`flex-1 py-2 text-xs transition-colors ${mode === "signin"
                 ? "bg-emerald-900/40 text-emerald-300"
                 : "text-slate-500 hover:text-slate-300"
-            }`}
+              }`}
           >
             ログイン
           </button>
           <button
             type="button"
             onClick={() => { setMode("signup"); setError(""); setEmail(""); setPassword(""); setDisplayName(""); }}
-            className={`flex-1 py-2 text-xs transition-colors ${
-              mode === "signup"
+            className={`flex-1 py-2 text-xs transition-colors ${mode === "signup"
                 ? "bg-emerald-900/40 text-emerald-300"
                 : "text-slate-500 hover:text-slate-300"
-            }`}
+              }`}
           >
             新規登録
           </button>
@@ -282,7 +280,7 @@ function LoginForm() {
           >
             {loading
               ? (mode === "signup" ? "登録中..." : "ログイン中...")
-              : (mode === "signup" ? "温室に入る" : "ログイン")
+              : (mode === "signup" ? "自己分析をはじめる" : "ログイン")
             }
           </button>
         </form>
