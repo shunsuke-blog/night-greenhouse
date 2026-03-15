@@ -219,6 +219,7 @@ export default function NightGreenhouse() {
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem(ONBOARDING_STORAGE_KEY);
     await supabase.auth.signOut();
     router.push("/login");
   };

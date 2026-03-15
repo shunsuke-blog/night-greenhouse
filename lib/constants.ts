@@ -7,3 +7,9 @@ export const EMOTION_SCORE_MAX = 10;
 
 /** transcript の最大文字数 */
 export const TRANSCRIPT_MAX = 10_000;
+
+/** 分析レート制限（24時間） */
+export const RATE_LIMIT_MS = 24 * 60 * 60 * 1000;
+
+/** 無料トライアル期間（7日間） */
+export const FREE_TRIAL_DAYS = 7;

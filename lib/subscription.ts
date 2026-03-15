@@ -103,6 +103,11 @@ export async function getAnalysisStatus(
   };
 }
 
+import { FREE_TRIAL_DAYS } from "@/lib/constants";
+
+/** 無料トライアル期間（ms） */
+export const FREE_TRIAL_MS = FREE_TRIAL_DAYS * 24 * 60 * 60 * 1000;
+
 /**
  * 強み一覧・価値観一覧ページへのアクセス権チェック。
  * 有料ユーザー(active) または管理者のみ許可。
@@ -120,4 +125,20 @@ export async function checkPremiumAccess(
   if (!data) return false;
   if (data.is_admin) return true;
   return data.subscription_status === "active";
+}
+
+/**
+ * 無料トライアル期間中を含むアクセス権チェック。
+ * seeds/page・treasures/page で使用。
+ */
+export function hasAccessWithFreeTrial(profile: {
+  is_admin?: boolean;
+  subscription_status?: string;
+  created_at?: string;
+} | null): boolean {
+  if (!profile) return false;
+  if (profile.is_admin) return true;
+  if (profile.subscription_status === "active") return true;
+  if (!profile.created_at) return false;
+  return new Date(profile.created_at).getTime() + FREE_TRIAL_MS > Date.now();
 }

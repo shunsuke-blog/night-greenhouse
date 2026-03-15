@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { hasAccessWithFreeTrial } from "@/lib/subscription";
 
 type DigSite = {
   id: string;
@@ -148,14 +149,7 @@ export default function TreasuresPage() {
         .select("is_admin, subscription_status, created_at")
         .eq("id", user.id)
         .maybeSingle();
-      const withinFreePeriod = profile?.created_at
-        ? new Date(profile.created_at).getTime() + 7 * 24 * 60 * 60 * 1000 > Date.now()
-        : false;
-      const hasAccess =
-        profile?.is_admin ||
-        profile?.subscription_status === "active" ||
-        withinFreePeriod;
-      if (!hasAccess) { router.push("/upgrade"); return; }
+      if (!hasAccessWithFreeTrial(profile)) { router.push("/upgrade"); return; }
       fetch("/api/treasures")
         .then((r) => r.json())
         .then((data) => { if (Array.isArray(data)) setTreasures(data); })

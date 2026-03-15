@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
 import { FRAGMENT_ANALYZE_PROMPT, VALUE_ANALYZE_PROMPT, ANALYZE_SYSTEM_PROMPT } from "@/lib/prompts";
 import { getAnalysisStatus } from "@/lib/subscription";
+import { RATE_LIMIT_MS } from "@/lib/constants";
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
 
@@ -27,7 +28,6 @@ export async function POST() {
     }
 
     // レート制限: 直近の分析完了から24時間以内は拒否
-    const RATE_LIMIT_MS = 24 * 60 * 60 * 1000;
     const { data: recentAnalyzed } = await supabase
       .from("daily_logs")
       .select("updated_at")
@@ -86,19 +86,36 @@ export async function POST() {
     ]);
 
     // ── 強みの処理 ────────────────────────────────────────────────────────────
-    const { fragments: flowerFragments } = JSON.parse(flowerResult.response.text()) as {
-      fragments: {
-        roots: { log_index: number; root: string }[];
-        is_new_flower: boolean;
-        flower_id?: string;
-        flower_name?: string;
-        os_description?: string;
-        logic_reflection?: string;
-        environment_condition?: string;
-      }[];
+    type FlowerFragment = {
+      roots: { log_index: number; root: string }[];
+      is_new_flower: boolean;
+      flower_id?: string;
+      flower_name?: string;
+      os_description?: string;
+      logic_reflection?: string;
+      environment_condition?: string;
     };
 
+    let flowerFragments: FlowerFragment[];
+    try {
+      const parsed = JSON.parse(flowerResult.response.text()) as { fragments: FlowerFragment[] };
+      flowerFragments = parsed.fragments ?? [];
+    } catch {
+      console.error("強み分析JSONパース失敗:", flowerResult.response.text());
+      return NextResponse.json({ error: "強み分析結果の解析に失敗しました。再度お試しください。" }, { status: 422 });
+    }
+
+    // 既存花のレベルを一括取得（N+1解消）
+    const existingFlowerIds = flowerFragments
+      .filter(f => !f.is_new_flower && f.flower_id)
+      .map(f => f.flower_id!);
+    const { data: existingFlowerLevels } = existingFlowerIds.length > 0
+      ? await supabase.from("flower_collection").select("id, level").in("id", existingFlowerIds)
+      : { data: [] as { id: string; level: number }[] };
+    const flowerLevelMap = new Map(existingFlowerLevels?.map(f => [f.id, f.level]) ?? []);
+
     const flowerCache: Record<string, string> = {};
+    const allRootInserts: { user_id: string; flower_id: string; log_id: string; root: string }[] = [];
 
     for (const fragment of flowerFragments) {
       const rootEntries = (fragment.roots ?? [])
@@ -107,37 +124,26 @@ export async function POST() {
       if (rootEntries.length === 0) continue;
 
       let flower_id: string;
-
       const flowerLevelGain = Math.ceil(Math.sqrt(rootEntries.length));
 
       if (!fragment.is_new_flower && fragment.flower_id) {
         flower_id = fragment.flower_id;
-        const { data: current } = await supabase
+        const currentLevel = flowerLevelMap.get(flower_id) ?? 1;
+        await supabase
           .from("flower_collection")
-          .select("level")
-          .eq("id", flower_id)
-          .single();
-        if (current) {
-          await supabase
-            .from("flower_collection")
-            .update({ level: current.level + flowerLevelGain })
-            .eq("id", flower_id);
-        }
+          .update({ level: currentLevel + flowerLevelGain })
+          .eq("id", flower_id);
+        flowerLevelMap.set(flower_id, currentLevel + flowerLevelGain);
       } else {
         const name = fragment.flower_name ?? "名もなき強み";
         if (flowerCache[name]) {
           flower_id = flowerCache[name];
-          const { data: current } = await supabase
+          const currentLevel = flowerLevelMap.get(flower_id) ?? 1;
+          await supabase
             .from("flower_collection")
-            .select("level")
-            .eq("id", flower_id)
-            .single();
-          if (current) {
-            await supabase
-              .from("flower_collection")
-              .update({ level: current.level + flowerLevelGain })
-              .eq("id", flower_id);
-          }
+            .update({ level: currentLevel + flowerLevelGain })
+            .eq("id", flower_id);
+          flowerLevelMap.set(flower_id, currentLevel + flowerLevelGain);
         } else {
           const { data: newFlower, error: insertError } = await supabase
             .from("flower_collection")
@@ -156,34 +162,52 @@ export async function POST() {
           }
           flower_id = newFlower.id;
           flowerCache[name] = flower_id;
+          flowerLevelMap.set(flower_id, flowerLevelGain);
         }
       }
 
       for (const { log, root } of rootEntries) {
-        await supabase.from("root_elements").insert({
-          user_id: user.id,
-          flower_id,
-          log_id: log.id,
-          root,
-        });
+        allRootInserts.push({ user_id: user.id, flower_id, log_id: log.id, root });
       }
     }
 
+    // root_elements を一括INSERT（N+1解消）
+    if (allRootInserts.length > 0) {
+      await supabase.from("root_elements").insert(allRootInserts);
+    }
+
     // ── 価値観の処理 ──────────────────────────────────────────────────────────
-    const { fragments: treasureFragments } = JSON.parse(treasureResult.response.text()) as {
-      fragments: {
-        sites: { log_index: number; site: string }[];
-        is_new_treasure: boolean;
-        treasure_id?: string;
-        treasure_name?: string;
-        description?: string;
-        keywords?: string[];
-        fulfillment_state?: string;
-        threat_signal?: string;
-      }[];
+    type TreasureFragment = {
+      sites: { log_index: number; site: string }[];
+      is_new_treasure: boolean;
+      treasure_id?: string;
+      treasure_name?: string;
+      description?: string;
+      keywords?: string[];
+      fulfillment_state?: string;
+      threat_signal?: string;
     };
 
+    let treasureFragments: TreasureFragment[];
+    try {
+      const parsed = JSON.parse(treasureResult.response.text()) as { fragments: TreasureFragment[] };
+      treasureFragments = parsed.fragments ?? [];
+    } catch {
+      console.error("価値観分析JSONパース失敗:", treasureResult.response.text());
+      return NextResponse.json({ error: "価値観分析結果の解析に失敗しました。再度お試しください。" }, { status: 422 });
+    }
+
+    // 既存価値観のレベルを一括取得（N+1解消）
+    const existingTreasureIds = treasureFragments
+      .filter(f => !f.is_new_treasure && f.treasure_id)
+      .map(f => f.treasure_id!);
+    const { data: existingTreasureLevels } = existingTreasureIds.length > 0
+      ? await supabase.from("treasure_collection").select("id, level").in("id", existingTreasureIds)
+      : { data: [] as { id: string; level: number }[] };
+    const treasureLevelMap = new Map(existingTreasureLevels?.map(t => [t.id, t.level]) ?? []);
+
     const treasureCache: Record<string, string> = {};
+    const allDigSiteInserts: { user_id: string; treasure_id: string; log_id: string; site: string }[] = [];
 
     for (const fragment of treasureFragments) {
       const siteEntries = (fragment.sites ?? [])
@@ -192,37 +216,26 @@ export async function POST() {
       if (siteEntries.length === 0) continue;
 
       let treasure_id: string;
-
       const treasureLevelGain = Math.ceil(Math.sqrt(siteEntries.length));
 
       if (!fragment.is_new_treasure && fragment.treasure_id) {
         treasure_id = fragment.treasure_id;
-        const { data: current } = await supabase
+        const currentLevel = treasureLevelMap.get(treasure_id) ?? 1;
+        await supabase
           .from("treasure_collection")
-          .select("level")
-          .eq("id", treasure_id)
-          .single();
-        if (current) {
-          await supabase
-            .from("treasure_collection")
-            .update({ level: current.level + treasureLevelGain })
-            .eq("id", treasure_id);
-        }
+          .update({ level: currentLevel + treasureLevelGain })
+          .eq("id", treasure_id);
+        treasureLevelMap.set(treasure_id, currentLevel + treasureLevelGain);
       } else {
         const name = fragment.treasure_name ?? "名もなき価値観";
         if (treasureCache[name]) {
           treasure_id = treasureCache[name];
-          const { data: current } = await supabase
+          const currentLevel = treasureLevelMap.get(treasure_id) ?? 1;
+          await supabase
             .from("treasure_collection")
-            .select("level")
-            .eq("id", treasure_id)
-            .single();
-          if (current) {
-            await supabase
-              .from("treasure_collection")
-              .update({ level: current.level + treasureLevelGain })
-              .eq("id", treasure_id);
-          }
+            .update({ level: currentLevel + treasureLevelGain })
+            .eq("id", treasure_id);
+          treasureLevelMap.set(treasure_id, currentLevel + treasureLevelGain);
         } else {
           const { data: newTreasure, error: insertError } = await supabase
             .from("treasure_collection")
@@ -242,38 +255,37 @@ export async function POST() {
           }
           treasure_id = newTreasure.id;
           treasureCache[name] = treasure_id;
+          treasureLevelMap.set(treasure_id, treasureLevelGain);
         }
       }
 
       for (const { log, site } of siteEntries) {
-        await supabase.from("dig_sites").insert({
-          user_id: user.id,
-          treasure_id,
-          log_id: log.id,
-          site,
-        });
+        allDigSiteInserts.push({ user_id: user.id, treasure_id, log_id: log.id, site });
       }
     }
 
+    // dig_sites を一括INSERT（N+1解消）
+    if (allDigSiteInserts.length > 0) {
+      await supabase.from("dig_sites").insert(allDigSiteInserts);
+    }
+
     // ── タネ（OS命名）の処理 ──────────────────────────────────────────────────
-    const { seed_name, os_description, logic_reflection, environment_condition } = JSON.parse(seedResult.response.text()) as {
-      seed_name: string;
-      os_description: string;
-      logic_reflection: string;
-      environment_condition: string;
-    };
-    const week_number = logs[0]?.week_number ?? 1;
-    await supabase.from("seeds_collection").upsert(
-      {
-        user_id: user.id,
-        week_number,
-        seed_name,
-        os_description,
-        logic_reflection,
-        environment_condition,
-      },
-      { onConflict: "user_id,week_number" }
-    );
+    let seedData: { seed_name: string; os_description: string; logic_reflection: string; environment_condition: string };
+    try {
+      seedData = JSON.parse(seedResult.response.text());
+    } catch {
+      console.error("タネ分析JSONパース失敗:", seedResult.response.text());
+      // タネのパース失敗は致命的ではないため処理を継続
+      seedData = { seed_name: "", os_description: "", logic_reflection: "", environment_condition: "" };
+    }
+
+    if (seedData.seed_name) {
+      const week_number = logs[0]?.week_number ?? 1;
+      await supabase.from("seeds_collection").upsert(
+        { user_id: user.id, week_number, ...seedData },
+        { onConflict: "user_id,week_number" }
+      );
+    }
 
     // ログを分析済みにマーク
     const logIds = logs.map(l => l.id);
