@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
-import { createClient } from "@/lib/supabase-server";
+import { createAdminClient } from "@/lib/supabase-server";
 import type Stripe from "stripe";
 
 // Next.js がボディを自動パースしないよう raw text で読む
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "署名検証に失敗しました" }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   switch (event.type) {
     case "checkout.session.completed": {
@@ -67,13 +67,15 @@ export async function POST(req: NextRequest) {
         session.subscription as string
       );
 
-      await supabase
+      console.log("[webhook] customerId:", customerId, "status:", subscription.status);
+      const { error: updateError, count } = await supabase
         .from("user_profiles")
         .update({
           subscription_status: toAppStatus(subscription.status),
           current_period_end: periodEndISO(subscription),
         })
         .eq("stripe_customer_id", customerId);
+      console.log("[webhook] update result - error:", updateError, "count:", count);
       break;
     }
 
