@@ -143,7 +143,7 @@ function UpgradeContent() {
             ✦ これまでに発見した強みと価値観はすべて保存されています
           </p>
           <p className="text-xs text-slate-600">
-            月額プランに登録すると、いつでも続きから閲覧・蓄積できます。
+            有料プランに登録すると、いつでも続きから閲覧・蓄積できます。
           </p>
         </div>
       )}
@@ -166,7 +166,7 @@ function UpgradeContent() {
               >
                 年額
               </button>
-              <span className="absolute -top-3 -right-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-md leading-none z-10 shadow-sm">お得</span>
+              <span className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg rounded-tr-xl leading-none z-10">お得</span>
             </div>
           </div>
 
