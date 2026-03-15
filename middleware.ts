@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
-  if (!user && pathname !== "/login" && !pathname.startsWith("/auth/")) {
+  if (!user && pathname !== "/login" && !pathname.startsWith("/auth/") && pathname !== "/api/stripe/webhook") {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }

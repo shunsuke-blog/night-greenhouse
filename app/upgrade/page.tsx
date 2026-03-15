@@ -89,7 +89,7 @@ function UpgradeContent() {
       {success && (
         <div className="p-4 bg-emerald-900/30 border border-emerald-700/50 rounded-2xl text-center space-y-2">
           <p className="text-emerald-300 text-sm">ご契約ありがとうございます</p>
-          <p className="text-slate-400 text-xs">引き続き心の土壌をお楽しみください。</p>
+          <p className="text-slate-400 text-xs">引き続きbloomineをお楽しみください。</p>
         </div>
       )}
       {canceled && (
