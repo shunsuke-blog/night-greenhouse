@@ -116,6 +116,7 @@ export async function POST() {
 
     const flowerCache: Record<string, string> = {};
     const newFlowerIdSet = new Set<string>();
+    const analyzedFlowerIdSet = new Set<string>();
     const allRootInserts: { user_id: string; flower_id: string; log_id: string; root: string }[] = [];
 
     for (const fragment of flowerFragments) {
@@ -168,6 +169,7 @@ export async function POST() {
         }
       }
 
+      analyzedFlowerIdSet.add(flower_id);
       for (const { log, root } of rootEntries) {
         allRootInserts.push({ user_id: user.id, flower_id, log_id: log.id, root });
       }
@@ -210,6 +212,7 @@ export async function POST() {
 
     const treasureCache: Record<string, string> = {};
     const newTreasureIdSet = new Set<string>();
+    const analyzedTreasureIdSet = new Set<string>();
     const allDigSiteInserts: { user_id: string; treasure_id: string; log_id: string; site: string }[] = [];
 
     for (const fragment of treasureFragments) {
@@ -263,6 +266,7 @@ export async function POST() {
         }
       }
 
+      analyzedTreasureIdSet.add(treasure_id);
       for (const { log, site } of siteEntries) {
         allDigSiteInserts.push({ user_id: user.id, treasure_id, log_id: log.id, site });
       }
@@ -328,11 +332,13 @@ export async function POST() {
 
     const newFlowers = (updatedFlowers ?? []).filter(f => newFlowerIdSet.has(f.id));
     const newTreasures = (updatedTreasures ?? []).filter(t => newTreasureIdSet.has(t.id));
+    const analyzedFlowers = (updatedFlowers ?? []).filter(f => analyzedFlowerIdSet.has(f.id));
+    const analyzedTreasures = (updatedTreasures ?? []).filter(t => analyzedTreasureIdSet.has(t.id));
 
     return NextResponse.json({
-      flowers: updatedFlowers ?? [],
+      flowers: analyzedFlowers,
       fragment_count: flowerFragments.length,
-      treasures: updatedTreasures ?? [],
+      treasures: analyzedTreasures,
       treasure_count: treasureFragments.length,
       new_flowers: newFlowers,
       new_treasures: newTreasures,
